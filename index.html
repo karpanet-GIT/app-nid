@@ -1,0 +1,1694 @@
+<!doctype html>
+<html lang="it" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Il mio portafoglio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface2:#F6F8FB; --ink:#18213A; --muted:#5A6378; --line:#E3E7EE;
+  --accent:#2F5BD3; --accent-ink:#FFFFFF; --gain:#17804F; --loss:#C0362C; --neutral:#E2E6EE; --warn:#9A5B00; --warn-bg:#FFF4DF;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1321; --surface:#151E31; --surface2:#1A253C; --ink:#E6EAF2; --muted:#97A1B5; --line:#27324A;
+    --accent:#7396FF; --accent-ink:#0D1321; --gain:#3EC07F; --loss:#FF6E61; --neutral:#212C44; --warn:#FFC266; --warn-bg:#2E2614;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1321; --surface:#151E31; --surface2:#1A253C; --ink:#E6EAF2; --muted:#97A1B5; --line:#27324A;
+  --accent:#7396FF; --accent-ink:#0D1321; --gain:#3EC07F; --loss:#FF6E61; --neutral:#212C44; --warn:#FFC266; --warn-bg:#2E2614;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.up{color:var(--gain)} .down{color:var(--loss)} .flat{color:var(--muted)}
+small{font-size:12.5px;color:var(--muted)}
+
+/* barra superiore */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font-size:17px;font-weight:700;margin:0;margin-right:auto;letter-spacing:-.01em}
+.ranges{display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;overflow-x:auto;max-width:100%}
+.ranges button{border:0;background:none;padding:5px 10px;border-radius:7px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.ranges button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 13px;font-weight:600;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--loss)}
+.btn.danger.armed{background:var(--loss);border-color:var(--loss);color:#fff}
+.btn.small{padding:5px 10px;font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+main{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+
+/* riepilogo */
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,2fr);gap:28px;align-items:end;margin-bottom:18px}
+.total-label{font-size:14px;color:var(--muted);margin:0 0 2px}
+.total{font-size:clamp(34px,5.4vw,52px);font-weight:700;letter-spacing:-.025em;line-height:1.05;margin:0}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.kpi{background:var(--surface);padding:11px 14px;min-width:0}
+.kpi .k{font-size:12.5px;color:var(--muted);margin-bottom:3px}
+.kpi .v{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .s{font-size:13px;font-weight:600}
+
+.banner{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.banner b{color:inherit}
+
+/* mappa */
+.map{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.tile{flex-shrink:1;min-width:128px;min-height:92px;border:0;border-radius:8px;padding:10px 12px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;background:var(--tbg);color:var(--tfg);transition:transform .12s}
+.tile:hover{transform:translateY(-1px)}
+.t-name{font-size:13px;font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.t-var{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-top:6px;white-space:nowrap}
+.t-pl{font-size:12.5px;opacity:.85}
+.alloc{margin:14px 0 26px}
+.alloc-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px}
+.alloc-bar span{display:block;height:100%}
+.alloc-leg{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:9px;font-size:13.5px}
+.alloc-leg span{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.alloc-leg i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.alloc-leg b{color:var(--ink);font-weight:600}
+
+/* pannelli */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:22px}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.card-h h2{font-size:16px;margin:0;font-weight:700}
+.chart{position:relative;width:100%;min-height:120px}
+.chart svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.chart-empty{display:flex;align-items:center;justify-content:center;text-align:center;min-height:150px;color:var(--muted);font-size:14px;padding:16px;border:1px dashed var(--line);border-radius:10px}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12.5px;padding:6px 9px;border-radius:7px;white-space:nowrap;transform:translateX(-50%);line-height:1.35;z-index:2}
+.tip b{font-weight:700}
+
+/* categorie */
+.cat{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.cat-h{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px 14px;padding:13px 18px;border-left:5px solid var(--cat);background:var(--surface2)}
+.cat-h h2{margin:0;font-size:16px;font-weight:700}
+.cat-h .cat-val{font-size:17px;font-weight:700;text-align:right}
+.cat-h .cat-sub{grid-column:2/4;display:flex;gap:18px;font-size:13.5px;font-weight:600;flex-wrap:wrap}
+.cat-h .cat-sub small{font-weight:500}
+.cat-dot{width:10px;height:10px;border-radius:50%;background:var(--cat)}
+.row{display:grid;grid-template-columns:minmax(0,2.3fr) .8fr .9fr .95fr 1fr 1.05fr 1.05fr 96px;gap:12px;align-items:center;padding:11px 18px;border:0;border-top:1px solid var(--line);background:none;width:100%;text-align:right;font-size:14px}
+button.row:hover{background:var(--surface2)}
+.row.head{font-size:12.5px;color:var(--muted);padding-top:8px;padding-bottom:8px}
+.row>span{min-width:0;display:flex;flex-direction:column;align-items:flex-end}
+.row .c-name{align-items:flex-start;text-align:left}
+.row .c-name b{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.row .c-per,.row .c-tot{font-weight:600}
+.row .c-per small,.row .c-tot small{color:inherit;opacity:.85;font-weight:500}
+.need{font-style:normal;font-size:12px;color:var(--warn);background:var(--warn-bg);border-radius:5px;padding:1px 6px;margin-top:3px}
+.partial{color:var(--muted);font-weight:500}
+body.range-carico .c-per{display:none}
+body.range-carico .row{grid-template-columns:minmax(0,2.3fr) .8fr .9fr .95fr 1fr 1.05fr 96px}
+.spark{width:96px;height:30px;display:block}
+
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty h2{color:var(--ink);font-size:20px;margin:0 0 6px}
+.foot{color:var(--muted);font-size:13px;margin-top:28px;max-width:72ch}
+
+/* dialoghi */
+dialog{border:0;border-radius:16px;padding:0;background:var(--surface);color:var(--ink);width:min(760px,calc(100vw - 24px));max-height:calc(100dvh - 32px);box-shadow:0 20px 60px rgba(10,18,40,.28)}
+dialog::backdrop{background:rgba(10,16,32,.45)}
+.dlg-h{display:flex;align-items:flex-start;gap:12px;padding:18px 20px 10px;position:sticky;top:0;background:var(--surface);z-index:3}
+.dlg-h h2{margin:0;font-size:19px;line-height:1.25}
+.dlg-h .x{margin-left:auto;border:0;background:var(--surface2);border-radius:8px;width:34px;height:34px;font-size:18px;line-height:1;flex-shrink:0}
+.dlg-b{padding:4px 20px 20px}
+.d-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:6px 0 14px}
+.d-stats div{background:var(--surface2);border-radius:10px;padding:9px 11px}
+.d-stats .k{font-size:12px;color:var(--muted)}
+.d-stats .v{font-size:16px;font-weight:700}
+.d-stats .s{font-size:12.5px;font-weight:600}
+.dlg-b .ranges{margin-bottom:10px;width:max-content}
+.note{font-size:13px;color:var(--muted);margin:8px 0 14px}
+.panel{margin-top:14px;padding:14px;border-radius:12px;background:var(--surface2)}
+.panel h3{margin:0 0 8px;font-size:15px}
+.panel p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.form .full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+label.f input,label.f select,textarea{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--ink);width:100%}
+textarea{min-height:130px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;resize:vertical}
+.hint{font-size:12.5px;color:var(--muted)}
+.bankbox{grid-column:1/-1;background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.err{color:var(--loss);font-size:13.5px;min-height:1em;margin:8px 0 0}
+.ok{color:var(--gain);font-size:13.5px;margin:8px 0 0}
+.dlg-f{display:flex;gap:8px;justify-content:flex-end;padding:0 20px 18px;flex-wrap:wrap}
+.bulk{display:grid;grid-template-columns:1fr 150px;gap:8px 12px;align-items:center}
+.bulk .n{font-size:14px;line-height:1.25}
+.bi{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.bi .chg{font-size:12px;font-weight:600;white-space:nowrap}
+.bulk input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 9px;width:100%;text-align:right}
+.menu{position:relative}
+#btnTheme{font-size:16px;line-height:1;padding:7px 11px}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:200px;box-shadow:0 10px 30px rgba(10,18,40,.18);display:none;z-index:30}
+.menu.open .menu-pop{display:block}
+.menu-pop button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:7px;font-size:14px}
+.menu-pop button:hover{background:var(--surface2)}
+
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr;gap:14px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .top-in{padding:9px 14px}
+  main{padding:16px 12px 50px}
+  .row,body.range-carico .row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n v" "p t";gap:4px 10px;padding:11px 14px}
+  .row .c-name{grid-area:n} .row .c-val{grid-area:v;font-weight:700}
+  .row .c-per{grid-area:p;flex-direction:row;gap:8px;align-items:baseline;justify-content:flex-start}
+  .row .c-tot{grid-area:t;flex-direction:row;gap:8px;align-items:baseline}
+  body.range-carico .row .c-tot{grid-area:p;justify-content:flex-start}
+  .row .c-qty,.row .c-pmc,.row .c-px,.row .c-spark{display:none}
+  .row.head{display:none}
+  .row .c-per::before{content:attr(data-l);font-size:12px;color:var(--muted);font-weight:500}
+  .row .c-tot::before{content:"Dal carico";font-size:12px;color:var(--muted);font-weight:500}
+  .tile{min-width:104px;min-height:80px;padding:8px 10px}
+  .t-var{font-size:17px}
+  .d-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .form{grid-template-columns:1fr}
+  .bulk{grid-template-columns:1fr 110px}
+}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;margin-bottom:22px}
+.grid2 .card{margin-bottom:0}
+.cmp-row{display:grid;grid-template-columns:150px 1fr 88px;align-items:center;gap:10px;padding:6px 0;font-size:14px}
+.cmp-row b{font-weight:600}
+.zbar{position:relative;height:14px;background:var(--surface2);border-radius:4px}
+.zbar::before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--muted);opacity:.5}
+.zbar span{position:absolute;top:0;bottom:0;border-radius:3px}
+.cmp-val{text-align:right;font-weight:700;white-space:nowrap}
+.cmp-table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:12px}
+.cmp-table th{font-weight:500;color:var(--muted);text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
+.cmp-table th:first-child,.cmp-table td:first-child{text-align:left}
+.cmp-table td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line)}
+.months{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;align-items:end;height:120px;margin:10px 0 4px}
+.mcol{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:3px}
+.mbar{width:100%;max-width:28px;border-radius:4px 4px 0 0;background:var(--accent);min-height:2px}
+.mbar.cond{background:repeating-linear-gradient(45deg,var(--accent) 0 4px,color-mix(in srgb,var(--accent) 40%,var(--surface)) 4px 8px)}
+.mbar.zero{background:var(--line)}
+.mlab{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;font-size:11.5px;color:var(--muted);text-align:center}
+.mamt{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.events{list-style:none;margin:12px 0 0;padding:0;font-size:14px}
+.events li{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:10px;padding:7px 0;border-top:1px solid var(--line);align-items:baseline}
+.events .d{color:var(--muted);font-size:13px}
+.events .amt{text-align:right;font-weight:600;white-space:nowrap}
+.tag{font-size:11.5px;border-radius:5px;padding:1px 6px;background:var(--surface2);color:var(--muted);margin-left:6px;font-weight:500;white-space:nowrap}
+.barrier{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.barrier h3{font-size:14.5px;margin:0 0 2px}
+.gauge{position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,color-mix(in srgb,var(--loss) 35%,var(--surface)) 0 var(--bc),color-mix(in srgb,#E39B2D 35%,var(--surface)) var(--bc) var(--bk),color-mix(in srgb,var(--gain) 30%,var(--surface)) var(--bk) 100%);margin:24px 0 26px}
+.gauge i{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);font-style:normal}
+.gauge i span{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:11px;white-space:nowrap;color:var(--muted)}
+.gauge i.now{width:4px;margin-left:-1px;border-radius:2px;background:var(--accent)}
+.gauge i.now span{top:auto;bottom:-19px;color:var(--ink);font-weight:600}
+fieldset.fs{grid-column:1/-1;border:1px solid var(--line);border-radius:10px;padding:12px;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+fieldset.fs legend{font-size:13px;font-weight:600;padding:0 4px}
+label.chk{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--ink)}
+.perfgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.perfgrid label.f input{padding:6px 7px;font-size:14px}
+.rt{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 12px}
+.rt td,.rt th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:right}
+.rt th{color:var(--muted);font-weight:500}
+.rt td:first-child,.rt th:first-child{text-align:left}
+.est{font-style:normal;font-size:12px;color:var(--muted);background:var(--surface2);border-radius:5px;padding:1px 6px;margin-top:3px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+@media (max-width:760px){.cmp-row{grid-template-columns:104px 1fr 64px}.perfgrid{grid-template-columns:repeat(4,minmax(0,1fr))}fieldset.fs{grid-template-columns:1fr}.mamt{display:none}}
+.minis{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.mini{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface);text-align:left;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mini:hover{border-color:var(--muted)}
+.mini-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;min-width:0;width:100%;overflow:hidden}
+.mini-h>span{white-space:nowrap;flex-shrink:0}
+.mini-h b{flex:1;min-width:0;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini svg{width:100%;height:70px;display:block}
+.legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:2px 0 8px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:6px}
+.legend i.dash{border-top-style:dashed}
+.banner[hidden]{display:none}
+.inc-f{margin:2px 0 10px;width:max-content;max-width:100%}
+.cpn-count{color:var(--accent)}
+.cpn-count small{font-weight:500}
+.banner.info{background:var(--surface2);color:var(--muted)}
+.banner.info small{color:var(--muted)}
+.pfcats{margin-top:14px;flex-wrap:wrap;width:max-content;max-width:100%}
+.pfcats button{display:inline-flex;align-items:center;gap:6px}
+.pfcats i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.cpn{padding:14px 18px 16px;border-top:1px solid var(--line);background:var(--surface)}
+.cpn h3{margin:0;font-size:15px}
+.tscroll{overflow-x:auto}
+.cpn .cmp-table{min-width:620px}
+.cpn .cmp-table td{vertical-align:top}
+.cpn .cmp-table tr.tot td{border-bottom:0;border-top:2px solid var(--line)}
+.cpn-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px 14px}
+</style>
+</head>
+<body class="range-carico">
+<header class="top">
+  <div class="top-in">
+    <h1>Il mio portafoglio</h1>
+    <div class="ranges" id="ranges" role="group" aria-label="Periodo"></div>
+    <div class="actions">
+      <button class="btn" id="btnBulk">Aggiorna prezzi</button>
+      <button class="btn primary" id="btnAdd">Aggiungi titolo</button>
+      <button class="btn" id="btnTheme" aria-label="Passa al tema scuro" title="Passa al tema scuro">☾</button>
+      <div class="menu" id="menu">
+        <button class="btn" id="btnMenu" aria-haspopup="true" aria-expanded="false" aria-label="Altre azioni">•••</button>
+        <div class="menu-pop" role="menu">
+          <button id="btnExport" role="menuitem">Esporta backup</button>
+          <button id="btnImport" role="menuitem">Ripristina da backup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="app"><div class="empty"><p>Caricamento del portafoglio…</p></div></main>
+
+<dialog id="dlg"></dialog>
+
+<script>
+
+(() => {
+'use strict';
+
+/* ---------- costanti ---------- */
+const CATS = [
+  {id:'ETF',   label:'ETF',             color:'#6E64D2', tax:26,   quote:'unit'},
+  {id:'ETC',   label:'ETC / ETN',       color:'#D9467A', tax:26,   quote:'unit'},
+  {id:'AZ',    label:'Azioni',          color:'#4F86E8', tax:26,   quote:'unit'},
+  {id:'TS',    label:'Titoli di Stato', color:'#1FA6D9', tax:12.5, quote:'pct'},
+  {id:'OBB',   label:'Obbligazioni',    color:'#0E8C7E', tax:26,   quote:'pct'},
+  {id:'CERT',  label:'Certificati',     color:'#E39B2D', tax:26,   quote:'unit'},
+  {id:'FONDI', label:'Fondi',           color:'#8D6E63', tax:26,   quote:'unit'},
+  {id:'ALTRO', label:'Altro',           color:'#8A94A6', tax:26,   quote:'unit'}
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.id, c]));
+const RANGES = [
+  ['1G','1G','1 giorno'],['1S','1S','1 settimana'],['1M','1M','1 mese'],['3M','3M','3 mesi'],
+  ['6M','6M','6 mesi'],['1A','1A','1 anno'],['3A','3A','3 anni'],['5A','5A','5 anni'],['CARICO','Dal carico','dal carico']
+];
+const inPfCat = h => S.pfCat === 'ALL' || (CAT[h.cat] ? h.cat : 'ALTRO') === S.pfCat;
+const PERF_KEYS = ['1S','1M','3M','6M','1A','3A','5A'];
+const RLABEL = Object.fromEntries(RANGES.map(r => [r[0], r[2]]));
+const CAP = {'1G':3,'1S':5,'1M':8,'3M':12,'6M':18,'1A':25,'3A':40,'5A':50,'CARICO':50};
+const MESI = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+const BENCH_COLORS = ['#2F5BD3','#8A94A6','#0E8C7E'];
+
+/* ---------- stato ---------- */
+const S = { holdings:[], hist:{}, bench:null, range:'CARICO', dRange:null, openId:null, loaded:false, pfCat:'ALL', incCat:'ALL' };
+try { const r = localStorage.getItem('pf-range'); if (r) S.range = r; } catch(e){}
+
+/* ---------- formattazione ---------- */
+const NF = {};
+const nf = d => NF[d] || (NF[d] = new Intl.NumberFormat('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d}));
+const ok = n => n != null && n !== '' && isFinite(n);
+const eur = n => ok(n) ? nf(2).format(n) + ' €' : '—';
+const eur0 = n => ok(n) ? nf(0).format(n) + ' €' : '—';
+const eurS = n => ok(n) ? (n > 0.004 ? '+' : n < -0.004 ? '−' : '') + nf(2).format(Math.abs(n)) + ' €' : '—';
+const pct = v => ok(v) ? (v > 0.00004 ? '+' : v < -0.00004 ? '−' : '') + nf(2).format(Math.abs(v*100)) + ' %' : '—';
+const pp = v => ok(v) ? (v > 0.00004 ? '+' : v < -0.00004 ? '−' : '') + nf(1).format(Math.abs(v*100)) + ' pt' : '—';
+const cls = v => !ok(v) || Math.abs(v) < 1e-7 ? 'flat' : v > 0 ? 'up' : 'down';
+const px = n => ok(n) ? (Math.abs(n) < 10 ? nf(4).format(n) : nf(2).format(n)) : '—';
+const pad = n => String(n).padStart(2,'0');
+const toISO = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const todayISO = () => toISO(new Date());
+const fDate = iso => { if(!iso) return ''; const [y,m,d] = iso.split('-'); return d+'/'+m+'/'+y; };
+const fDateS = iso => { if(!iso) return ''; const [y,m,d] = iso.split('-'); return d+'/'+m+'/'+y.slice(2); };
+function addISO(iso, {days=0, months=0, years=0}){
+  const d = new Date(iso+'T12:00:00');
+  d.setFullYear(d.getFullYear()+years); d.setMonth(d.getMonth()+months); d.setDate(d.getDate()+days);
+  return toISO(d);
+}
+function addMonthsISO(iso, n){
+  const [y,m,d] = iso.split('-').map(Number);
+  const t = (y*12 + (m-1)) + n, ny = Math.floor(t/12), nm = t % 12;
+  const last = new Date(ny, nm+1, 0).getDate();
+  return ny + '-' + pad(nm+1) + '-' + pad(Math.min(d, last));
+}
+const monthDiff = (a, b) => { const [ay,am] = a.split('-').map(Number), [by,bm] = b.split('-').map(Number); return (by-ay)*12 + (bm-am); };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => 'h' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
+const clone = o => JSON.parse(JSON.stringify(o));
+const NFIN = {};
+const fmtIn = (n, d=4) => ok(n) ? (NFIN[d] || (NFIN[d] = new Intl.NumberFormat('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d,useGrouping:false}))).format(n).replace(/(,\d*?)0+$/,'$1').replace(/,$/,'') : '';
+
+function parseNum(s, intLike){
+  if (s == null) return NaN;
+  s = String(s).trim().replace(/["'\s€%\u00a0+]/g,'');
+  if (!s || s === '-' ) return NaN;
+  if (intLike && /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g,'');
+  const c = s.includes(','), d = s.includes('.');
+  if (c && d){ if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g,'').replace(',','.'); else s = s.replace(/,/g,''); }
+  else if (c){ s = (s.match(/,/g).length > 1) ? s.replace(/,/g,'') : s.replace(',','.'); }
+  else if (d && s.match(/\./g).length > 1){ s = s.replace(/\./g,''); }
+  return Number(s);
+}
+const MON = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,gen:1,mag:5,giu:6,lug:7,ago:8,set:9,ott:10,dic:12};
+function mkDate(y,m,d){ if (m<1||m>12||d<1||d>31||y<1970||y>2100) return null; return y+'-'+pad(m)+'-'+pad(d); }
+function parseDate(s){
+  s = String(s ?? '').trim().replace(/"/g,''); let m;
+  if ((m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/))) return mkDate(+m[1],+m[2],+m[3]);
+  if ((m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})\b/))){ let a=+m[1], b=+m[2], y=+m[3]; if (y<100) y+=2000; if (b>12 && a<=12) [a,b]=[b,a]; return mkDate(y,b,a); }
+  if ((m = s.match(/^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/))){ const mo = MON[m[1].toLowerCase()]; return mo ? mkDate(+m[3],mo,+m[2]) : null; }
+  if ((m = s.match(/^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\.?\s+(\d{4})/))){ const mo = MON[m[2].toLowerCase()]; return mo ? mkDate(+m[3],mo,+m[1]) : null; }
+  return null;
+}
+
+/* ---------- CSV ---------- */
+function splitLine(line, delim){
+  if (delim === ' ') return line.trim().split(/\s+/);
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++){
+    const ch = line[i];
+    if (ch === '"'){ if (q && line[i+1] === '"'){ cur += '"'; i++; } else q = !q; }
+    else if (ch === delim && !q){ out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out.map(x => x.trim());
+}
+function parseCSV(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 1) throw new Error('Il testo incollato è vuoto.');
+  const probe = lines.slice(0, 8);
+  let delim = null;
+  for (const d of ['\t',';',' ',',']){
+    const counts = probe.map(l => splitLine(l, d).length);
+    if (counts[0] >= 2 && counts.every(c => c === counts[0])){ delim = d; break; }
+  }
+  if (!delim){ for (const d of ['\t',';',' ',',']){ if (splitLine(lines[lines.length-1], d).length >= 2){ delim = d; break; } } }
+  if (!delim) throw new Error('Non trovo le colonne: servono almeno una colonna data e una colonna prezzo.');
+  const rows = lines.map(l => splitLine(l, delim));
+  let header = null;
+  if (!rows[0].some(c => parseDate(c))) header = rows.shift();
+  if (!rows.length) throw new Error('Nessuna riga di dati trovata.');
+  const ncol = Math.max(...rows.slice(0,30).map(r => r.length));
+  const sample = rows.slice(0, 40);
+  let dateCol = -1, best = 0;
+  for (let c = 0; c < ncol; c++){ const n = sample.filter(r => parseDate(r[c])).length; if (n > best){ best = n; dateCol = c; } }
+  if (dateCol < 0) throw new Error('Non riconosco la colonna delle date (formati accettati: 31/12/2025, 2025-12-31, 31.12.2025, Dec 31, 2025).');
+  let priceCol = -1;
+  if (header){
+    for (const re of [/^(chiusura|close|ultimo|last|prezzo|price|nav|valore|quotazione)\b/i, /chiusura|close|ultimo|prezzo|price/i]){
+      priceCol = header.findIndex((h, i) => i !== dateCol && re.test(h) && !/adj|rettific|var|%|vol/i.test(h));
+      if (priceCol >= 0) break;
+    }
+  }
+  if (priceCol < 0){
+    for (let c = 0; c < ncol; c++){
+      if (c === dateCol) continue;
+      const n = sample.filter(r => { const v = parseNum(r[c]); return ok(v) && v > 0; }).length;
+      if (n >= sample.length * 0.7){ priceCol = c; break; }
+    }
+  }
+  if (priceCol < 0) throw new Error('Non trovo una colonna di prezzi numerici.');
+  const map = new Map();
+  for (const r of rows){ const d = parseDate(r[dateCol]), v = parseNum(r[priceCol]); if (d && ok(v) && v > 0) map.set(d, v); }
+  if (!map.size) throw new Error('Nessun prezzo valido trovato.');
+  return { points:[...map.entries()].sort((a,b) => a[0] < b[0] ? -1 : 1), priceName: header ? header[priceCol] : 'colonna ' + (priceCol+1) };
+}
+
+/* ---------- archiviazione ----------
+   Il portafoglio si salva solo dopo un'azione esplicita dell'utente e solo dopo
+   aver letto i dati dal server: così una pagina appena aperta non può mai
+   sovrascrivere i titoli con uno stato vuoto. */
+const store = {
+  mode:'local', db:null, uid:null, dl:null, synced:false, pending:new Set(),
+  async init(){
+    try{
+      if (window.claude && typeof window.claude.use === 'function'){
+        const [db, user, dl] = await Promise.all([window.claude.use('db'), window.claude.use('user'), window.claude.use('downloads')]);
+        this.dl = dl;
+        if (db && user){ const id = await user.id(); if (id){ this.db = db; this.uid = id; this.mode = 'db'; } }
+      }
+    }catch(e){}
+  },
+  col(){ return this.db.collection('data/users/' + this.uid); },
+  start(onData){
+    if (this.mode === 'db'){
+      let first = true;
+      this.col().doc('portfolio').onSnapshot(async snap => {
+        if (snap.metadata && snap.metadata.hasPendingWrites) return;
+        const data = snap.exists ? snap.data() : null;
+        const holdings = data && Array.isArray(data.holdings) ? clone(data.holdings) : [];
+        await this.loadHist(holdings);
+        this.synced = true; first = false;
+        onData('portfolio', holdings);
+      }, () => { if (first){ first = false; this.mode = 'local'; this.startLocal(onData); } });
+      this.col().doc('benchmarks').onSnapshot(snap => {
+        if (snap.metadata && snap.metadata.hasPendingWrites) return;
+        onData('bench', snap.exists ? clone(snap.data()) : null);
+      }, () => {});
+      return;
+    }
+    this.startLocal(onData);
+  },
+  startLocal(onData){
+    let d = null;
+    try{ const raw = localStorage.getItem('portafoglio-v2'); if (raw) d = JSON.parse(raw); }catch(e){}
+    S.hist = (d && d.hist) || {};
+    this.synced = true;
+    onData('bench', (d && d.bench) || null);
+    onData('portfolio', (d && d.holdings) || []);
+  },
+  async loadHist(holdings){
+    await Promise.all(holdings.filter(h => !this.pending.has(h.id)).map(async h => {
+      try{
+        const s = await this.col().doc('hist-' + h.id).get();
+        const pts = s.exists ? s.data().points : null;
+        S.hist[h.id] = Array.isArray(pts) ? pts.map(p => [p[0], +p[1]]).sort((a,b) => a[0] < b[0] ? -1 : 1) : [];
+      }catch(e){ S.hist[h.id] = S.hist[h.id] || []; }
+    }));
+  },
+  async savePortfolio(){
+    if (!this.synced) return false;
+    if (this.mode === 'db'){
+      try{ await this.col().doc('portfolio').set(clone({ version:2, holdings:S.holdings, updatedAt:new Date().toISOString() })); return true; }
+      catch(e){ showErr('Salvataggio non riuscito: ' + (e && (e.message || e.code) || 'errore')); return false; }
+    }
+    return this.saveLocal();
+  },
+  async saveBench(){
+    if (this.mode === 'db'){
+      try{ await this.col().doc('benchmarks').set(clone(S.bench || {items:[]})); return true; }
+      catch(e){ showErr('Salvataggio non riuscito: ' + (e && (e.message || e.code) || 'errore')); return false; }
+    }
+    return this.saveLocal();
+  },
+  // Salva lo storico unendolo a quello sul server: un prezzo già salvato (anche da un'altra
+  // finestra o da Claude) non viene mai perso; per la stessa data vince il prezzo appena inserito.
+  async saveHist(id, force){
+    if (this.mode === 'db'){
+      this.pending.add(id);
+      try{
+        let pts = S.hist[id] || [];
+        if (!force){
+          const s = await this.col().doc('hist-' + id).get();
+          const server = s.exists && Array.isArray(s.data().points) ? s.data().points : [];
+          const m = new Map(server.map(p => [p[0], +p[1]]));
+          for (const p of pts) m.set(p[0], p[1]);
+          pts = [...m.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1);
+          S.hist[id] = pts;
+        }
+        if (pts.length) await this.col().doc('hist-' + id).set({ points: pts });
+        else await this.col().doc('hist-' + id).delete();
+        return true;
+      }catch(e){ showErr('Salvataggio dello storico non riuscito: ' + (e && (e.message || e.code) || 'errore')); return false; }
+      finally{ this.pending.delete(id); }
+    }
+    return this.saveLocal();
+  },
+  saveLocal(){
+    try{ localStorage.setItem('portafoglio-v2', JSON.stringify({holdings:S.holdings, hist:S.hist, bench:S.bench})); return true; }
+    catch(e){ return false; }
+  }
+};
+function showErr(msg){ const b = document.getElementById('saveErr'); if (b){ b.textContent = msg; b.hidden = false; } }
+
+/* ---------- calcoli ---------- */
+const isComplete = h => h.qty > 0 && h.pmc > 0 && h.price > 0;
+const factor = h => h.quote === 'pct' ? h.qty / 100 : h.qty;
+const perfFor = (h, r) => { const v = h.perf && h.perf.r ? h.perf.r[r] : null; return ok(v) ? v / 100 : null; };
+function priceAt(H, iso){
+  if (!H || !H.length) return null;
+  let lo = 0, hi = H.length - 1, ans = -1;
+  while (lo <= hi){ const mid = (lo + hi) >> 1; if (H[mid][0] <= iso){ ans = mid; lo = mid + 1; } else hi = mid - 1; }
+  return ans < 0 ? null : H[ans];
+}
+function tradingDay(iso){ const d = new Date(iso + 'T12:00:00'), w = d.getDay(); if (w === 6) d.setDate(d.getDate() - 1); if (w === 0) d.setDate(d.getDate() - 2); return toISO(d); }
+const lastTradingDay = () => tradingDay(todayISO());
+function prevPoint(H, date){ let p = null; for (const x of (H || [])){ if (x[0] < date) p = x; else break; } return p; }
+const RDAYS = {'1S':7,'1M':30,'3M':91,'6M':182,'1A':365,'3A':1095,'5A':1826};
+function nearestAt(H, iso, tolDays, before){
+  if (!H || !H.length) return null;
+  const t = Date.parse(iso + 'T00:00:00Z'); let best = null, bd = Infinity;
+  for (const p of H){ if (before && p[0] >= before) continue; const d = Math.abs(Date.parse(p[0] + 'T00:00:00Z') - t) / 864e5; if (d < bd){ bd = d; best = p; } }
+  return best && bd <= tolDays ? { p:best, gap:bd } : null;
+}
+function accruedInt(h){
+  const inc = h.income;
+  if (!inc || inc.kind !== 'bond' || !ok(inc.rate) || !inc.anchor || !(inc.freq > 0) || h.quote !== 'pct' || !isComplete(h)) return 0;
+  const t = todayISO(), step = Math.round(12 / inc.freq);
+  const prev = couponDates(inc, addMonthsISO(t, -(step + 1)), t).pop();
+  if (!prev) return 0;
+  const next = addMonthsISO(prev, step);
+  const days = (Date.parse(t) - Date.parse(prev)) / 864e5, per = (Date.parse(next) - Date.parse(prev)) / 864e5;
+  return per > 0 ? h.qty * inc.rate / 100 / inc.freq * days / per : 0;
+}
+function rangeStart(r){
+  const t = todayISO();
+  return ({ '1S':addISO(t,{days:-7}), '1M':addISO(t,{months:-1}), '3M':addISO(t,{months:-3}), '6M':addISO(t,{months:-6}),
+            '1A':addISO(t,{years:-1}), '3A':addISO(t,{years:-3}), '5A':addISO(t,{years:-5}) })[r];
+}
+function periodBase(h, r){
+  if (!isComplete(h)) return null;
+  if (r === 'CARICO') return { price:h.pmc, date:h.buyDate || null, kind:'pmc' };
+  const H = S.hist[h.id] || [];
+  if (r === '1G'){
+    const cur = h.priceDate || (H.length ? H[H.length-1][0] : null);
+    if (!cur) return null;
+    const p = prevPoint(H, cur);
+    return p ? { price:p[1], date:p[0], kind: cur < lastTradingDay() ? 'partial' : 'hist' } : null;
+  }
+  const start = rangeStart(r);
+  if (h.buyDate && h.buyDate > start) return { price:h.pmc, date:h.buyDate, kind:'pmc' };
+  const cur = h.priceDate || todayISO();
+  const nb = nearestAt(H, start, Math.max(4, RDAYS[r] * 0.25), cur);
+  if (nb && nb.gap <= 4) return { price:nb.p[1], date:nb.p[0], kind:'hist' };
+  const pf = perfFor(h, r);
+  if (pf != null) return { price:h.price / (1 + pf), date:null, kind:'perf' };
+  if (nb) return { price:nb.p[1], date:nb.p[0], kind:'partial' };
+  return null;
+}
+function calc(h, r){
+  if (!isComplete(h)){
+    const v = h.bank ? h.bank.value : 0, c = h.bank ? h.bank.cost : null;
+    const plTot = ok(c) ? v - c : null, varTot = ok(c) && c ? v / c - 1 : null;
+    let base = null, plPer = null, varPer = null;
+    if (r === 'CARICO'){ plPer = plTot; varPer = varTot; }
+    else { const pf = perfFor(h, r); if (pf != null){ varPer = pf; plPer = v - v / (1 + pf); base = { kind:'perf' }; } }
+    return { value:v, cost:c, plTot, varTot, base, plPer, varPer, incomplete:true };
+  }
+  const acc = accruedInt(h);
+  const f = factor(h), value = f * h.price + acc, cost = f * h.pmc;
+  const base = periodBase(h, r);
+  return { value, cost, acc, plTot:value - cost, varTot:value / cost - 1, base,
+           plPer: base ? f * (h.price - base.price) : null, varPer: base ? h.price / base.price - 1 : null };
+}
+function taxRate(h){ return ok(h.tax) ? h.tax : (CAT[h.cat] || CAT.ALTRO).tax; }
+function totals(r){
+  let value = 0, cost = 0, plTot = 0, plPer = 0, basePer = 0, cov = 0, covVal = 0, net = 0;
+  for (const h of S.holdings){
+    const c = calc(h, r);
+    value += c.value;
+    if (ok(c.cost)){ cost += c.cost; plTot += c.plTot; net += c.plTot > 0 ? c.plTot * (1 - taxRate(h)/100) : c.plTot; }
+    if (ok(c.plPer)){ plPer += c.plPer; basePer += c.value - c.plPer; cov++; covVal += c.value; }
+  }
+  return { value, cost, plTot, varTot: cost ? plTot / cost : null, plPer: cov ? plPer : null, varPer: basePer ? plPer / basePer : null, cov, covVal, n:S.holdings.length, net };
+}
+
+/* ---------- cedole e scadenze ---------- */
+function incNominal(h){
+  const inc = h.income || {};
+  if (inc.nominal > 0) return inc.nominal;
+  if (h.quote === 'pct' && h.qty > 0) return h.qty;
+  if (h.bank && h.bank.cost) return h.bank.cost;
+  return null;
+}
+function couponDates(inc, from, to){
+  if (!inc || !inc.anchor || !(inc.freq > 0)) return [];
+  const step = Math.round(12 / inc.freq);
+  let k = Math.floor(monthDiff(inc.anchor, from) / step) - 1;
+  const out = []; let guard = 0;
+  while (guard++ < 500){
+    const d = addMonthsISO(inc.anchor, k * step); k++;
+    if (d > to) break;
+    if (d < from) continue;
+    if (inc.start && d < inc.start) continue;
+    if (inc.maturity && d > inc.maturity) break;
+    out.push(d);
+  }
+  return out;
+}
+function incomeEvents(from, to){
+  const ev = [];
+  for (const h of S.holdings){
+    const inc = h.income; if (!inc) continue;
+    const nom = incNominal(h); const tax = taxRate(h) / 100;
+    const per = !ok(nom) ? null : inc.kind === 'bond' ? (ok(inc.rate) ? nom * inc.rate / 100 / inc.freq : null) : (ok(inc.coupon) ? nom * inc.coupon / 100 : null);
+    for (const d of couponDates(inc, from, to)) ev.push({ date:d, h, type: inc.kind === 'cert' && !inc.fixed ? 'cond' : 'coupon', gross:per, net: ok(per) ? per * (1 - tax) : null });
+    if (inc.maturity && inc.maturity >= from && inc.maturity <= to) ev.push({ date:inc.maturity, h, type:'maturity', gross:nom, net:nom });
+  }
+  return ev.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+}
+
+/* ---------- grafici ---------- */
+let gradN = 0;
+const ro = ('ResizeObserver' in window) ? new ResizeObserver(entries => {
+  for (const e of entries){ const el = e.target; const w = Math.round(e.contentRect.width); if (el._draw && el._w !== w){ el._w = w; el._draw(); } }
+}) : null;
+function mountChart(el, pts, opt){ el._draw = () => drawChart(el, pts, opt); el._w = Math.round(el.clientWidth); el._draw(); if (ro) ro.observe(el); }
+function drawChart(el, pts, opt = {}){
+  if (!pts || pts.length < 2){ el.innerHTML = `<div class="chart-empty">${opt.empty || 'Nessun dato per questo periodo.'}</div>`; return; }
+  const W = Math.max(280, el.clientWidth || 640), H = opt.h || 260, pl = 6, pr = 74, pt = 14, pb = 26;
+  const xs = pts.map(p => Date.parse(p[0] + 'T00:00:00Z')), ys = pts.map(p => p[1]);
+  const refs = (opt.refs || []).filter(r => ok(r.v));
+  let lo = Math.min(...ys, ...refs.map(r => r.v)), hi = Math.max(...ys, ...refs.map(r => r.v));
+  if (hi === lo){ hi += Math.abs(hi) * 0.01 || 1; lo -= Math.abs(lo) * 0.01 || 1; }
+  const py = (hi - lo) * 0.08; lo -= py; hi += py;
+  const x0 = xs[0], x1 = xs[xs.length-1];
+  const X = t => pl + (t - x0) / ((x1 - x0) || 1) * (W - pl - pr);
+  const Y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  const up = ys[ys.length-1] >= (opt.trendBase ?? ys[0]);
+  const col = up ? 'var(--gain)' : 'var(--loss)';
+  let d = '';
+  for (let i = 0; i < pts.length; i++) d += (i ? 'L' : 'M') + X(xs[i]).toFixed(1) + ' ' + Y(ys[i]).toFixed(1);
+  const area = d + `L${X(x1).toFixed(1)} ${H-pb} L${X(x0).toFixed(1)} ${H-pb} Z`;
+  const gid = 'g' + (++gradN);
+  const fmt = opt.fmt || (v => px(v));
+  let grid = '';
+  for (let i = 0; i <= 3; i++){
+    const v = lo + py + (hi - lo - 2*py) * i / 3, y = Y(v);
+    grid += `<line x1="${pl}" x2="${W-pr}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`
+         +  `<text x="${W-pr+8}" y="${(y+4).toFixed(1)}" font-size="11.5" fill="var(--muted)">${esc(fmt(v))}</text>`;
+  }
+  let refsSvg = '';
+  for (const r of refs){
+    const y = Y(r.v);
+    refsSvg += `<line x1="${pl}" x2="${W-pr}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="5 4" opacity=".7"/>`
+            +  `<rect x="${W-pr+2}" y="${(y-9).toFixed(1)}" width="${pr-4}" height="18" rx="4" fill="var(--ink)"/>`
+            +  `<text x="${W-pr+7}" y="${(y+4).toFixed(1)}" font-size="11" font-weight="600" fill="var(--surface)">${esc(r.label)}</text>`;
+  }
+  const mid = Math.floor(pts.length / 2);
+  const xl = `<text x="${pl}" y="${H-7}" font-size="11.5" fill="var(--muted)">${fDate(pts[0][0])}</text>`
+           + `<text x="${X(xs[mid]).toFixed(1)}" y="${H-7}" font-size="11.5" fill="var(--muted)" text-anchor="middle">${fDate(pts[mid][0])}</text>`
+           + `<text x="${W-pr}" y="${H-7}" font-size="11.5" fill="var(--muted)" text-anchor="end">${fDate(pts[pts.length-1][0])}</text>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(opt.aria || 'Grafico')}">
+    <defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".22"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    ${grid}<path d="${area}" fill="url(#${gid})"/>
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${refsSvg}${xl}
+    <g class="cur" visibility="hidden"><line y1="${pt}" y2="${H-pb}" stroke="var(--muted)" stroke-width="1"/><circle r="4.5" fill="${col}" stroke="var(--surface)" stroke-width="2"/></g>
+  </svg><div class="tip" hidden></div>`;
+  const svg = el.querySelector('svg'), cur = svg.querySelector('.cur'), ln = cur.querySelector('line'), dot = cur.querySelector('circle'), tip = el.querySelector('.tip');
+  const move = e => {
+    const r = svg.getBoundingClientRect(); const mx = (e.clientX - r.left) * (W / r.width);
+    const t = x0 + (mx - pl) / (W - pl - pr) * (x1 - x0);
+    let lo2 = 0, hi2 = xs.length - 1;
+    while (hi2 - lo2 > 1){ const m = (lo2 + hi2) >> 1; if (xs[m] < t) lo2 = m; else hi2 = m; }
+    const i = Math.abs(xs[lo2] - t) < Math.abs(xs[hi2] - t) ? lo2 : hi2;
+    const cx = X(xs[i]), cy = Y(ys[i]);
+    ln.setAttribute('x1', cx); ln.setAttribute('x2', cx); dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+    cur.setAttribute('visibility', 'visible');
+    tip.hidden = false;
+    tip.innerHTML = opt.tip ? opt.tip(i, pts) : `${fDate(pts[i][0])}<br><b>${esc(fmt(ys[i]))}</b>`;
+    const left = cx * (r.width / W);
+    tip.style.left = Math.min(Math.max(left, 70), r.width - 70) + 'px';
+    tip.style.top = Math.max(0, cy * (r.height / H) - 56) + 'px';
+  };
+  svg.addEventListener('pointermove', move);
+  svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', () => { cur.setAttribute('visibility','hidden'); tip.hidden = true; });
+}
+function seriesFor(h, r){
+  const H = S.hist[h.id] || [];
+  if (!H.length) return [];
+  if (r === 'CARICO') return H;
+  if (r === '1G') return H.slice(-2);
+  const s = rangeStart(r);
+  const pts = H.filter(p => p[0] >= s);
+  const b = priceAt(H, s) || (nearestAt(H, s, Math.max(4, RDAYS[r] * 0.25)) || {}).p;
+  if (b && (!pts.length || pts[0][0] > b[0])) pts.unshift(b);
+  return pts;
+}
+function spark(h){
+  let pts;
+  const HL = (S.hist[h.id] || []).length;
+  if ((HL >= 10 || (!h.perf && HL >= 3)) && isComplete(h)) pts = S.range === 'CARICO' ? (S.hist[h.id] || []).slice(-260) : seriesFor(h, S.range);
+  else if (h.perf){ const raw = perfSeries(h.perf), from = (S.range !== 'CARICO' && S.range !== '1G') ? rangeStart(S.range) : null; const w = from ? raw.filter(p => p[0] >= addISO(from, {days:-10})) : raw; pts = w.length >= 2 ? w : raw; }
+  else return '<svg class="spark" aria-hidden="true"></svg>';
+  if (!pts || pts.length < 2) return '<svg class="spark" aria-hidden="true"></svg>';
+  if (pts.length > 160){ const step = Math.ceil(pts.length / 160); pts = pts.filter((_, i) => i % step === 0 || i === pts.length - 1); }
+  const ys = pts.map(p => p[1]); let lo = Math.min(...ys), hi = Math.max(...ys); if (hi === lo){ hi += 1; lo -= 1; }
+  const W = 96, Hh = 30;
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + (i / (pts.length - 1) * (W - 2) + 1).toFixed(1) + ' ' + (2 + (hi - p[1]) / (hi - lo) * (Hh - 4)).toFixed(1)).join('');
+  const col = ys[ys.length-1] >= ys[0] ? 'var(--gain)' : 'var(--loss)';
+  return `<svg class="spark" viewBox="0 0 ${W} ${Hh}" aria-hidden="true"><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+}
+function portfolioSeries(r){
+  const hs = S.holdings.filter(h => inPfCat(h) && isComplete(h) && (S.hist[h.id] || []).length >= 10);
+  if (!hs.length) return { pts:[], used:0, cost:0 };
+  let start;
+  if (r === 'CARICO') start = hs.map(h => S.hist[h.id][0][0]).sort().pop();
+  else if (r === '1G') start = addISO(todayISO(), {days:-5});
+  else start = rangeStart(r);
+  const used = hs.filter(h => priceAt(S.hist[h.id], start) || S.hist[h.id][0][0] <= start);
+  if (!used.length) return { pts:[], used:0, cost:0 };
+  const dates = new Set();
+  for (const h of used) for (const p of S.hist[h.id]) if (p[0] >= start) dates.add(p[0]);
+  const pts = [];
+  for (const d of [...dates].sort()){
+    let sum = 0, all = true;
+    for (const h of used){ const p = priceAt(S.hist[h.id], d); if (!p){ all = false; break; } sum += factor(h) * p[1]; }
+    if (all) pts.push([d, sum]);
+  }
+  return { pts: r === '1G' ? pts.slice(-2) : pts, used:used.length, cost: used.reduce((a, h) => a + factor(h) * h.pmc, 0) };
+}
+
+/* ---------- serie ricostruite dai rendimenti per periodo ---------- */
+const ANCH = ['5A','3A','1A','6M','3M','1M','1S'];
+const MIN_HIST = 10;
+function anchorDate(asOf, k){
+  return ({ '5A':addISO(asOf,{years:-5}), '3A':addISO(asOf,{years:-3}), '1A':addISO(asOf,{years:-1}), '6M':addISO(asOf,{months:-6}),
+            '3M':addISO(asOf,{months:-3}), '1M':addISO(asOf,{months:-1}), '1S':addISO(asOf,{days:-7}) })[k];
+}
+function perfSeries(perf){
+  if (!perf || !perf.r) return [];
+  const asOf = perf.asOf || todayISO(), pts = [];
+  for (const k of ANCH) if (ok(perf.r[k])) pts.push([anchorDate(asOf, k), 1 / (1 + perf.r[k] / 100)]);
+  if (pts.length) pts.push([asOf, 1]);
+  return pts;
+}
+const normalize = (pts, base = 100) => pts.length ? pts.map(p => [p[0], p[1] / pts[0][1] * base]) : [];
+function holdingIndex(h){
+  const H = S.hist[h.id] || [];
+  if (isComplete(h) && (H.length >= MIN_HIST || (!h.perf && H.length >= 3))) return { pts: normalize(H.slice(-1300)), kind:'hist' };
+  const p = perfSeries(h.perf);
+  return p.length >= 2 ? { pts: normalize(p), kind:'perf' } : null;
+}
+function benchIndex(b, base = 100, from){
+  if (!b || !S.bench) return [];
+  let p = perfSeries({ asOf:S.bench.asOf, r:b.r });
+  if (from) p = p.filter(x => x[0] >= addISO(from, {days:-10}));
+  return normalize(p, base);
+}
+function reconPortfolio(){
+  const hs = S.holdings.filter(h => inPfCat(h) && h.perf && h.perf.r && ANCH.every(k => ok(h.perf.r[k])));
+  if (!hs.length) return null;
+  const asOf = hs.map(h => h.perf.asOf || todayISO()).sort().pop();
+  const pts = ANCH.map(k => [anchorDate(asOf, k), hs.reduce((a, h) => a + calc(h, 'CARICO').value / (1 + h.perf.r[k] / 100), 0)]);
+  const now = hs.reduce((a, h) => a + calc(h, 'CARICO').value, 0);
+  pts.push([asOf, now]);
+  return { pts, n:hs.length, value:now };
+}
+function legendHTML(series){
+  return `<div class="legend">${series.map(s => `<span><i class="${s.dash ? 'dash' : ''}" style="border-color:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>`;
+}
+function mountMulti(el, series, opt){ el._draw = () => drawMulti(el, series, opt); el._w = Math.round(el.clientWidth); el._draw(); if (ro) ro.observe(el); }
+function drawMulti(el, series, opt = {}){
+  series = series.filter(s => s.pts && s.pts.length >= 2);
+  if (!series.length){ el.innerHTML = `<div class="chart-empty">${opt.empty || 'Nessun dato.'}</div>`; return; }
+  const W = Math.max(280, el.clientWidth || 640), H = opt.h || 240, pl = 6, pr = 70, pt = 12, pb = 26;
+  const T = d => Date.parse(d + 'T00:00:00Z');
+  const all = series.flatMap(s => s.pts);
+  const x0 = Math.min(...all.map(p => T(p[0]))), x1 = Math.max(...all.map(p => T(p[0])));
+  let lo = Math.min(...all.map(p => p[1])), hi = Math.max(...all.map(p => p[1]));
+  if (hi === lo){ hi += 1; lo -= 1; }
+  const py = (hi - lo) * 0.08; lo -= py; hi += py;
+  const X = t => pl + (t - x0) / ((x1 - x0) || 1) * (W - pl - pr);
+  const Y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  const fmt = opt.fmt || (v => nf(0).format(v));
+  let svg = '';
+  if (opt.shadeFrom){
+    const sx = Math.max(pl, X(T(opt.shadeFrom)));
+    if (sx < W - pr) svg += `<rect x="${sx.toFixed(1)}" y="${pt}" width="${(W - pr - sx).toFixed(1)}" height="${H - pt - pb}" fill="var(--accent)" opacity=".07"/>`
+      + `<text x="${(sx + 4).toFixed(1)}" y="${pt + 11}" font-size="11" fill="var(--muted)">${esc(opt.shadeLabel || '')}</text>`;
+  }
+  for (let i = 0; i <= 3; i++){
+    const v = lo + py + (hi - lo - 2*py) * i / 3, y = Y(v);
+    svg += `<line x1="${pl}" x2="${W-pr}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/>`
+        +  `<text x="${W-pr+8}" y="${(y+4).toFixed(1)}" font-size="11.5" fill="var(--muted)">${esc(fmt(v))}</text>`;
+  }
+  if (opt.refs) for (const r of opt.refs){ if (!ok(r.v) || r.v < lo || r.v > hi) continue; const y = Y(r.v);
+    svg += `<line x1="${pl}" x2="${W-pr}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--ink)" stroke-dasharray="2 4" opacity=".6"/><text x="${pl+2}" y="${(y-4).toFixed(1)}" font-size="11" fill="var(--muted)">${esc(r.label)}</text>`; }
+  for (const s of series.slice().reverse()){
+    const d = s.pts.map((p, i) => (i ? 'L' : 'M') + X(T(p[0])).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join('');
+    svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w || 2}" ${s.dash ? 'stroke-dasharray="6 4"' : ''} stroke-linejoin="round" stroke-linecap="round" opacity="${s.dash ? .85 : 1}"/>`;
+    if (s.dots) svg += s.pts.map(p => `<circle cx="${X(T(p[0])).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="3" fill="${s.color}" stroke="var(--surface)" stroke-width="1.5"/>`).join('');
+  }
+  svg += `<text x="${pl}" y="${H-7}" font-size="11.5" fill="var(--muted)">${fDate(new Date(x0).toISOString().slice(0,10))}</text>`
+      +  `<text x="${W-pr}" y="${H-7}" font-size="11.5" fill="var(--muted)" text-anchor="end">${fDate(new Date(x1).toISOString().slice(0,10))}</text>`;
+  svg += `<line class="vl" y1="${pt}" y2="${H-pb}" stroke="var(--muted)" visibility="hidden"/>`;
+  el.innerHTML = (opt.legend === false ? '' : legendHTML(series)) + `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(opt.aria || 'Grafico')}">${svg}</svg><div class="tip" hidden></div>`;
+  const sv = el.querySelector('svg'), vl = sv.querySelector('.vl'), tip = el.querySelector('.tip');
+  const near = (pts, t) => pts.reduce((b, p) => Math.abs(T(p[0]) - t) < Math.abs(T(b[0]) - t) ? p : b, pts[0]);
+  const move = e => {
+    const r = sv.getBoundingClientRect(); const mx = (e.clientX - r.left) * (W / r.width);
+    const t = x0 + (mx - pl) / (W - pl - pr) * (x1 - x0);
+    const p0 = near(series[0].pts, t), cx = X(T(p0[0]));
+    vl.setAttribute('x1', cx); vl.setAttribute('x2', cx); vl.setAttribute('visibility', 'visible');
+    tip.hidden = false;
+    tip.innerHTML = fDate(p0[0]) + series.map(s => { const p = near(s.pts, T(p0[0])); return `<br>${esc(s.name)}: <b>${esc(fmt(p[1]))}</b> <span style="opacity:.75">${pct(p[1] / s.pts[0][1] - 1)}</span>`; }).join('');
+    const left = cx * (r.width / W);
+    tip.style.left = Math.min(Math.max(left, 110), r.width - 110) + 'px';
+    tip.style.top = (opt.legend === false ? 0 : 24) + 'px';
+  };
+  sv.addEventListener('pointermove', move); sv.addEventListener('pointerdown', move);
+  sv.addEventListener('pointerleave', () => { vl.setAttribute('visibility', 'hidden'); tip.hidden = true; });
+}
+function miniSVG(pts, bpts, shadeFrom){
+  const W = 300, H = 70, T = d => Date.parse(d + 'T00:00:00Z');
+  const all = pts.concat(bpts || []);
+  const x0 = Math.min(...all.map(p => T(p[0]))), x1 = Math.max(...all.map(p => T(p[0])));
+  let lo = Math.min(...all.map(p => p[1])), hi = Math.max(...all.map(p => p[1])); if (hi === lo){ hi += 1; lo -= 1; }
+  const X = t => (t - x0) / ((x1 - x0) || 1) * W, Y = v => 4 + (hi - v) / (hi - lo) * (H - 8);
+  const path = ps => ps.map((p, i) => (i ? 'L' : 'M') + X(T(p[0])).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join('');
+  const col = pts[pts.length-1][1] >= pts[0][1] ? 'var(--gain)' : 'var(--loss)';
+  let s = '';
+  if (shadeFrom){ const sx = Math.max(0, X(T(shadeFrom))); if (sx < W) s += `<rect x="${sx.toFixed(1)}" y="0" width="${(W - sx).toFixed(1)}" height="${H}" fill="var(--accent)" opacity=".08"/>`; }
+  if (bpts && bpts.length > 1) s += `<path d="${path(bpts)}" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>`;
+  s += `<path d="${path(pts)}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${s}</svg>`;
+}
+function minisCard(){
+  const bs = (S.bench && S.bench.items) || [];
+  const ref = bs[0];
+  const from = (S.range !== 'CARICO' && S.range !== '1G') ? rangeStart(S.range) : null;
+  const win = pts => { const w = from ? pts.filter(p => p[0] >= addISO(from, {days:-10})) : pts; return w.length >= 2 ? normalize(w) : normalize(pts); };
+  const items = S.holdings.map(h => { const i = holdingIndex(h); return { h, idx: i ? { kind:i.kind, pts:win(i.pts) } : null, c: calc(h, S.range) }; }).filter(x => x.idx).sort((a, b) => b.c.value - a.c.value);
+  const missing = S.holdings.filter(h => !holdingIndex(h));
+  if (!items.length) return '';
+  return `<section class="card"><div class="card-h"><h2>Andamento dei titoli</h2><small>${from ? esc(RLABEL[S.range]) : 'ultimi 5 anni'}${ref ? `, linea tratteggiata: ${esc(ref.name)}` : ''}</small></div>
+    <div class="minis">${items.map(({h, idx, c}) => {
+      const first = idx.pts[0][0];
+      const b = ref ? win(benchIndex(ref, 100).filter(p => p[0] >= addISO(first, {days:-10}))) : [];
+      const tot = idx.pts[idx.pts.length-1][1] / idx.pts[0][1] - 1;
+      return `<button class="mini" data-open="${h.id}">
+        <span class="mini-h"><b>${esc(h.name)}</b><span class="${cls(c.varPer)}" style="font-weight:700">${S.range === 'CARICO' ? pct(c.varTot) : pct(c.varPer)}</span></span>
+        ${miniSVG(idx.pts, b, null)}
+        <small>${idx.kind === 'hist' ? 'storico prezzi' : 'ricostruito dai rendimenti'}, dal ${fDateS(first)}${ref && b.length > 1 ? `, ${esc(ref.name)} ${pct(b[b.length-1][1] / b[0][1] - 1)}` : ''}</small>
+      </button>`; }).join('')}</div>
+    ${missing.length ? `<p class="note" style="margin:10px 0 0">Senza dati per il grafico: ${missing.map(h => esc(h.name)).join(', ')}. Per vederli importa lo storico prezzi (serve la quantità) o inserisci i rendimenti per periodo.</p>` : ''}
+  </section>`;
+}
+
+/* ---------- render ---------- */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+
+function renderRanges(){
+  $('#ranges').innerHTML = RANGES.map(r => `<button data-range="${r[0]}" aria-pressed="${S.range === r[0]}" title="${esc(r[2])}">${r[1]}</button>`).join('');
+  document.body.classList.toggle('range-carico', S.range === 'CARICO');
+}
+function tileColors(v){
+  if (!ok(v)) return ['var(--neutral)', 'var(--muted)'];
+  const k = Math.min(1, Math.abs(v * 100) / CAP[S.range]);
+  const p = Math.round(14 + 72 * k);
+  return [`color-mix(in srgb, ${v >= 0 ? 'var(--gain)' : 'var(--loss)'} ${p}%, var(--surface))`, p > 52 ? '#FFFFFF' : 'var(--ink)'];
+}
+function groups(){
+  const by = {};
+  for (const h of S.holdings){ const id = CAT[h.cat] ? h.cat : 'ALTRO'; (by[id] = by[id] || []).push(h); }
+  return CATS.filter(c => by[c.id]).map(c => {
+    const items = by[c.id].slice().sort((a, b) => calc(b, 'CARICO').value - calc(a, 'CARICO').value);
+    return { cat:c, items, value: items.reduce((a, h) => a + calc(h, 'CARICO').value, 0) };
+  });
+}
+function render(){
+  renderRanges();
+  if (!S.loaded) return;
+  if (!S.holdings.length){
+    app.innerHTML = `<div class="empty"><h2>Il portafoglio è vuoto</h2><p>Aggiungi il primo titolo con quantità e prezzo di carico, oppure ripristina un backup.</p>
+      <div class="actions" style="justify-content:center;margin-top:14px"><button class="btn primary" data-act="add">Aggiungi titolo</button><button class="btn" data-act="import">Ripristina da backup</button></div></div>${footer()}`;
+    return;
+  }
+  const T = totals(S.range), TC = S.range === 'CARICO' ? T : totals('CARICO');
+  const rl = RLABEL[S.range];
+  const incomplete = S.holdings.filter(h => !isComplete(h));
+  const noData = S.holdings.filter(h => !ok(calc(h, S.range).varPer));
+
+  let html = `<p class="banner" id="saveErr" hidden></p>`;
+  if (S.range === '1G'){
+    const ltd = lastTradingDay();
+    const stale = S.holdings.filter(h => isComplete(h) && (!h.priceDate || h.priceDate < ltd));
+    if (stale.length) html += `<div class="banner"><span>${stale.length === 1 ? '1 titolo non è aggiornato' : stale.length + ' titoli non sono aggiornati'} al ${fDate(ltd)}: per ${stale.length === 1 ? 'questo titolo' : 'questi titoli'} la variazione di 1 giorno si riferisce all'ultimo giorno registrato (asterisco).</span><button class="btn small" data-act="bulk">Aggiorna prezzi</button></div>`;
+  }
+  if (incomplete.length){
+    html += `<div class="banner"><span>${incomplete.length === 1 ? '1 titolo' : incomplete.length + ' titoli'} senza quantità: valori e guadagni dal carico sono quelli della banca. Inserisci la quantità (la trovi nella scheda del titolo, nell'app della banca) per attivare grafici e storico.</span><button class="btn small" data-open="${incomplete[0].id}" data-edit="1">Completa ${esc(incomplete[0].name)}</button></div>`;
+  } else if (S.range === '1G' && noData.length){
+    html += `<div class="banner"><span>${noData.length === 1 ? '1 titolo non ha' : noData.length + ' titoli non hanno'} ancora una chiusura precedente registrata: la variazione di 1 giorno comparirà dal prossimo giorno di Borsa in cui aggiorni i prezzi.</span><button class="btn small" data-act="bulk">Aggiorna prezzi</button></div>`;
+  } else if (S.range !== 'CARICO' && noData.length){
+    const availFrom = h => {
+      const H = S.hist[h.id] || [], recent = H.filter(p => p[0] >= addISO(todayISO(), {days:-30}));
+      return addISO(recent.length ? recent[0][0] : todayISO(), {days: Math.ceil(RDAYS[S.range] * 0.75)});
+    };
+    html += `<div class="banner info"><span>${noData.length === 1 ? '1 titolo non ha' : noData.length + ' titoli non hanno'} ancora la variazione di prezzo per ${esc(rl)}: per certificati e BTP non esiste uno storico prezzi gratuito, quindi la variazione si costruisce con i prezzi registrati ogni giorno di Borsa. Non serve fare nulla: comparirà da sola${noData.some(h => h.income) ? '; nel frattempo vedi le cedole incassate nel periodo' : ''}.<br>${noData.map(h => `<small>${esc(h.name)}: disponibile dal ${fDate(availFrom(h))} circa</small>`).join('<br>')}</span></div>`;
+  }
+
+  html += `<section class="hero">
+    <div><p class="total-label">Valore del portafoglio</p><p class="total">${eur(T.value)}</p></div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Investito</div><div class="v">${eur(TC.cost)}</div></div>
+      <div class="kpi"><div class="k">Guadagno dal carico</div><div class="v ${cls(TC.plTot)}">${eurS(TC.plTot)}</div><div class="s ${cls(TC.varTot)}">${pct(TC.varTot)}</div></div>
+      <div class="kpi"><div class="k">${S.range === 'CARICO' ? 'Netto stimato dopo tasse' : 'Nel periodo: ' + rl}</div>${S.range === 'CARICO'
+          ? `<div class="v ${cls(TC.net)}">${eurS(TC.net)}</div><div class="s flat">26 % e 12,5 % sui titoli di Stato</div>`
+          : `<div class="v ${cls(T.plPer)}">${eurS(T.plPer)}</div><div class="s ${cls(T.varPer)}">${pct(T.varPer)}${T.cov < T.n ? ` <span class="partial">su ${T.cov} di ${T.n} titoli</span>` : ''}</div>`}</div>
+      <div class="kpi"><div class="k">${S.range === 'CARICO' ? 'Titoli' : 'Netto stimato dopo tasse'}</div>${S.range === 'CARICO'
+          ? `<div class="v">${T.n}</div><div class="s flat">${groups().length} categorie</div>`
+          : `<div class="v ${cls(TC.net)}">${eurS(TC.net)}</div><div class="s flat">sul guadagno dal carico</div>`}</div>
+    </div>
+  </section>`;
+
+  const items = S.holdings.map(h => ({ h, c: calc(h, S.range) })).sort((a, b) => b.c.value - a.c.value);
+  const tot = items.reduce((a, x) => a + x.c.value, 0) || 1;
+  html += `<div class="map" aria-label="Mappa dei titoli: dimensione per valore, colore per variazione ${esc(rl)}">` + items.map(({h, c}) => {
+    const share = c.value / tot * 100; const [bg, fg] = tileColors(c.varPer);
+    return `<button class="tile" data-open="${h.id}" style="flex:${share.toFixed(2)} 1 ${Math.max(share*0.92, 0).toFixed(2)}%;--tbg:${bg};--tfg:${fg}">
+      <span class="t-name">${esc(h.name)}</span>
+      ${ok(c.varPer) || !couponOnly(h) ? `<span><span class="t-var" style="display:block">${pct(c.varPer)}${c.base && c.base.kind === 'partial' ? '*' : ''}</span><span class="t-pl">${ok(c.plPer) ? eurS(c.plPer) : 'nessun dato'}</span></span>`
+        : `<span><span class="t-var" style="display:block">${pct(couponOnly(h).y)}</span><span class="t-pl">solo cedole, ${eur(couponOnly(h).net)}</span></span>`}
+    </button>`;
+  }).join('') + `</div>`;
+
+  const gs = groups();
+  html += `<div class="alloc"><div class="alloc-bar">${gs.map(g => `<span style="flex:${g.value} 1 0;background:${g.cat.color}" title="${esc(g.cat.label)}"></span>`).join('')}</div>
+    <div class="alloc-leg">${gs.map(g => `<span><i style="background:${g.cat.color}"></i>${esc(g.cat.label)} <b>${nf(1).format(g.value / T.value * 100)} %</b></span>`).join('')}</div></div>`;
+
+  html += `<div class="grid2">${benchCard(T)}${incomeCard()}</div>`;
+
+  html += minisCard();
+  html += `<section class="card"><div class="card-h"><h2>Andamento del portafoglio</h2><small id="pfNote"></small></div><div class="chart" id="pfChart"></div>${pfCatButtons()}</section>`;
+
+  for (const g of gs){
+    const sub = g.items.map(h => calc(h, S.range));
+    const cv = sub.reduce((a, c) => a + c.value, 0);
+    const cc = sub.reduce((a, c) => a + (ok(c.cost) ? c.cost : 0), 0);
+    const cpl = sub.reduce((a, c) => a + (ok(c.plTot) ? c.plTot : 0), 0);
+    const per = sub.filter(c => ok(c.plPer)); const ppl = per.reduce((a, c) => a + c.plPer, 0); const pbase = per.reduce((a, c) => a + c.value - c.plPer, 0);
+    html += `<section class="cat" style="--cat:${g.cat.color}">
+      <div class="cat-h"><span class="cat-dot"></span><h2>${esc(g.cat.label)}</h2><span class="cat-val">${eur(cv)}</span>
+        <div class="cat-sub">${S.range !== 'CARICO' ? `<span class="${cls(ppl)}"><small>${esc(rl)}</small> ${per.length ? pct(pbase ? ppl / pbase : null) + ' ' + eurS(ppl) : '—'}</span>` : ''}
+        <span class="${cls(cpl)}"><small>Dal carico</small> ${pct(cc ? cpl / cc : null)} ${eurS(cpl)}</span>${['CERT','TS','OBB'].includes(g.cat.id) ? couponCounter(g.items) : ''}</div>
+      </div>
+      <div class="row head" aria-hidden="true"><span class="c-name">Strumento</span><span class="c-qty">Quantità</span><span class="c-pmc">Carico</span><span class="c-px">Prezzo</span><span class="c-val">Valore</span><span class="c-per">${esc(rl)}</span><span class="c-tot">Dal carico</span><span class="c-spark">Andamento</span></div>
+      ${g.items.map((h, i) => rowHTML(h, sub[i])).join('')}
+      ${['CERT','TS','OBB'].includes(g.cat.id) ? couponsBlock(g.items) : ''}
+    </section>`;
+  }
+  html += footer();
+  app.innerHTML = html;
+
+  const ps = portfolioSeries(S.range), el = $('#pfChart'), note = $('#pfNote');
+  if (ps.pts.length >= 2){
+    const nCat = S.holdings.filter(inPfCat).length;
+    note.textContent = ps.used < nCat ? `Calcolato su ${ps.used} titoli su ${nCat}${S.pfCat === 'ALL' ? '' : ' del comparto'} (quelli con storico nel periodo)` : '';
+    const first = ps.pts[0][1];
+    mountChart(el, ps.pts, { h:250, fmt:v => nf(0).format(v) + ' €', aria:'Valore del portafoglio nel tempo',
+      refs: [{ v:ps.cost, label:'Investito' }], trendBase: first,
+      tip:(i, p) => `${fDate(p[i][0])}<br><b>${eur(p[i][1])}</b><br>dall'inizio periodo ${pct(p[i][1] / first - 1)}<br>dal carico ${pct(p[i][1] / ps.cost - 1)}` });
+  } else {
+    const rp = reconPortfolio();
+    if (rp){
+      const bs = (S.bench && S.bench.items) || [];
+      const start = rp.pts[0][1];
+      const series = [{ name: S.pfCat === 'ALL' ? 'Le tue posizioni attuali' : CAT[S.pfCat].label, color:'var(--ink)', pts:rp.pts, dots:true, w:2.4 }]
+        .concat(bs.map((b, i) => ({ name:'Stessa cifra in ' + b.name, color:BENCH_COLORS[i % 3], dash:true, pts:benchIndex(b, start) })));
+      const shade = (S.range !== 'CARICO' && S.range !== '1G') ? rangeStart(S.range) : null;
+      const nCat = S.holdings.filter(inPfCat).length;
+      note.textContent = `Ricostruito dai rendimenti per periodo di ${rp.n} titoli su ${nCat}${S.pfCat === 'ALL' ? '' : ' del comparto ' + CAT[S.pfCat].label} (${eur0(rp.value)} oggi): mostra quanto valevano nel tempo le posizioni che hai adesso.`;
+      mountMulti(el, series, { h:260, fmt:v => nf(0).format(v) + ' €', aria:'Valore ricostruito delle posizioni', shadeFrom:shade, shadeLabel:shade ? RLABEL[S.range] : '' });
+    } else {
+      note.textContent = '';
+      el.innerHTML = `<div class="chart-empty">${S.pfCat === 'ALL' ? 'Il grafico del portafoglio si costruisce con lo storico prezzi o con i rendimenti per periodo dei titoli.' : `Per ${esc(CAT[S.pfCat].label)} non ci sono ancora dati per il grafico: inserisci la quantità e importa lo storico prezzi dalla scheda dei singoli titoli.`}</div>`;
+    }
+  }
+}
+function pfCatButtons(){
+  const present = CATS.filter(c => S.holdings.some(h => (CAT[h.cat] ? h.cat : 'ALTRO') === c.id));
+  if (present.length < 2) return '';
+  const btn = (id, label, color) => `<button data-pfcat="${id}" aria-pressed="${S.pfCat === id}">${color ? `<i style="background:${color}"></i>` : ''}${esc(label)}</button>`;
+  return `<div class="ranges pfcats" role="group" aria-label="Filtra per comparto">${btn('ALL', 'Tutto il portafoglio')}${present.map(c => btn(c.id, c.label, c.color)).join('')}</div>`;
+}
+
+/* --- cedole nel periodo --- */
+function couponCounter(items){
+  let net = 0, gross = 0, n = 0, missing = 0;
+  for (const h of items){
+    const cp = couponsIn(h, S.range);
+    if (cp.state !== 'ok'){ missing++; continue; }
+    net += cp.net; gross += cp.gross; n += cp.paid.length;
+  }
+  const lab = S.range === 'CARICO' ? 'dal primo acquisto' : RLABEL[S.range];
+  return `<span class="cpn-count"><small>Cedole incassate, ${esc(lab)}</small> ${eur(net)} netti <small>(${n} ${n === 1 ? 'cedola' : 'cedole'}, lordo ${eur(gross)}${missing ? `; ${missing} ${missing === 1 ? 'titolo' : 'titoli'} senza ${S.range === 'CARICO' ? 'data di acquisto o ' : ''}dati cedola` : ''})</small></span>`;
+}
+function couponOnly(h){
+  if (!h.income || S.range === 'CARICO') return null;
+  const cp = couponsIn(h, S.range);
+  if (cp.state !== 'ok' || !cp.paid.length) return null;
+  const cost = calc(h, 'CARICO').cost;
+  return cost ? { net:cp.net, y:cp.net / cost } : null;
+}
+function couponPer(h){
+  const inc = h.income; if (!inc) return null;
+  const nom = incNominal(h);
+  if (inc.kind === 'bond') return ok(inc.rate) && ok(nom) ? nom * inc.rate / 100 / inc.freq : null;
+  return ok(inc.coupon) && ok(nom) ? nom * inc.coupon / 100 : null;
+}
+function couponFrom(h, r){
+  if (r === 'CARICO') return h.buyDate || null;
+  if (r === '1G') return addISO(todayISO(), {days:-1});
+  return rangeStart(r);
+}
+function couponsIn(h, r){
+  const inc = h.income; if (!inc) return { state:'noinc' };
+  const per = couponPer(h); if (!ok(per)) return { state:'noinc' };
+  if (!inc.anchor) return { state:'noinc' };
+  let from = couponFrom(h, r); if (!from) return { state:'nobuy' };
+  if (h.buyDate && h.buyDate > from) from = h.buyDate;
+  const to = todayISO();
+  const dates = couponDates(inc, addISO(from, {days:1}), to);
+  const missed = new Set(inc.missed || []);
+  const paid = dates.filter(d => !missed.has(d));
+  const tax = taxRate(h) / 100;
+  return { state:'ok', from, dates, paid, per, gross: per * paid.length, net: per * paid.length * (1 - tax), annual: per * inc.freq, skipped: dates.length - paid.length };
+}
+function couponsBlock(items){
+  const r = S.range, rl = RLABEL[r];
+  const rows = items.map(h => {
+    const cp = couponsIn(h, r), c = calc(h, r), cost = calc(h, 'CARICO').cost;
+    if (cp.state === 'noinc') return `<tr><td>${esc(h.name)}</td><td colspan="6" style="text-align:left"><button class="btn small" data-open="${h.id}" data-edit="1">Imposta cedola, frequenza e data di pagamento</button></td></tr>`;
+    if (cp.state === 'nobuy') return `<tr><td>${esc(h.name)}</td><td colspan="6" style="text-align:left"><small>Per il calcolo “dal carico” serve la data del primo acquisto.</small> <button class="btn small" data-open="${h.id}" data-edit="1">Inserisci la data</button></td></tr>`;
+    const cy = cost ? cp.net / cost : null;
+    const base = r === 'CARICO' ? cost : (ok(c.plPer) ? c.value - c.plPer : null);
+    const priceCh = r === 'CARICO' ? c.plTot : c.plPer;
+    const tot = ok(priceCh) ? priceCh + cp.net : null;
+    const totPct = ok(tot) && base ? tot / base : null;
+    return { h, cp, cy, priceCh, tot, totPct, html: `<tr><td><button style="all:unset;cursor:pointer" data-open="${h.id}" data-panel="coupons">${esc(h.name)}</button><br><small>cedola annua ${cost ? nf(2).format(cp.annual / cost * 100) + ' % lordo sul carico' : '—'}</small></td>
+      <td>${cp.paid.length}${cp.skipped ? `<br><small>${cp.skipped} non pagata${cp.skipped > 1 ? 'e' : ''}</small>` : ''}</td>
+      <td>${eur(cp.net)}<br><small>lordo ${eur(cp.gross)}</small></td>
+      <td class="${cls(cy)}">${pct(cy)}</td>
+      <td class="${cls(priceCh)}">${eurS(priceCh)}</td>
+      <td class="${cls(tot)}"><b>${eurS(tot)}</b><br><small>${pct(totPct)}</small></td></tr>` };
+  });
+  const okRows = rows.filter(x => typeof x === 'object');
+  const sumNet = okRows.reduce((a, x) => a + x.cp.net, 0);
+  const sumCost = okRows.reduce((a, x) => a + (calc(x.h, 'CARICO').cost || 0), 0);
+  const allTot = okRows.every(x => ok(x.tot));
+  const sumTot = allTot ? okRows.reduce((a, x) => a + x.tot, 0) : null;
+  return `<div class="cpn"><div class="card-h" style="margin-bottom:4px"><h3>Cedole incassate, ${esc(rl)}</h3><small>${r === 'CARICO' ? 'dalla data del primo acquisto' : 'dal ' + fDate(couponFrom(items[0], r))} a oggi</small></div>
+    <div class="tscroll"><table class="cmp-table"><tr><th>Titolo</th><th>Cedole</th><th>Incassato netto</th><th>Rendimento cedolare</th><th>Variazione prezzo</th><th>Rendimento totale</th></tr>
+    ${rows.map(x => typeof x === 'object' ? x.html : x).join('')}
+    ${okRows.length > 1 ? `<tr class="tot"><td><b>Totale</b></td><td></td><td><b>${eur(sumNet)}</b></td><td class="${cls(sumNet)}">${pct(sumCost ? sumNet / sumCost : null)}</td><td></td><td class="${cls(sumTot)}"><b>${eurS(sumTot)}</b></td></tr>` : ''}
+    </table></div>
+    <p class="note" style="margin:8px 0 0">Il rendimento cedolare è il netto incassato diviso per il capitale investito; il rendimento totale somma cedole nette e variazione di prezzo. Le cedole condizionate si considerano pagate: se una non è stata pagata, segnalala nella scheda del titolo (tocca il nome). Le date di pagamento dei certificati sono indicative e possono differire di qualche giorno.</p></div>`;
+}
+
+function footer(){
+  const src = [];
+  if (S.bench && S.bench.asOf) src.push(`Indici di riferimento al ${fDate(S.bench.asOf)} (${esc(S.bench.source || 'fonte esterna')}).`);
+  return `<p class="foot">${store.mode === 'db' ? 'I dati sono salvati nel tuo account, visibili solo a te.' : 'I dati sono salvati solo in questo browser: esporta un backup ogni tanto.'}
+   ${src.join(' ')} Il netto stimato applica il 26 % (12,5 % ai titoli di Stato) alle sole plusvalenze, senza compensare le minusvalenze: è un ordine di grandezza, non un calcolo fiscale. Su 1 giorno l'asterisco indica che l'ultimo prezzo non è di oggi. Negli altri periodi indica che la variazione è calcolata dal prezzo disponibile più vicino all'inizio del periodo (la data esatta è nella scheda del titolo). Il valore dei BTP include il rateo di interessi maturato, come nell'app della banca.</p>`;
+}
+function rowHTML(h, c){
+  const done = isComplete(h);
+  const part = c.base && c.base.kind === 'partial';
+  return `<button class="row" data-open="${h.id}">
+    <span class="c-name"><b>${esc(h.name)}</b><small>${esc(h.isin || '')}</small>${done ? (h.est ? '<em class="est">quantità stimata</em>' : '') : '<em class="need">Inserisci la quantità</em>'}</span>
+    <span class="c-qty">${done ? nf(Number.isInteger(h.qty) ? 0 : 2).format(h.qty) : '—'}</span>
+    <span class="c-pmc">${done ? px(h.pmc) : eur(c.cost)}</span>
+    <span class="c-px">${done ? px(h.price) : '—'}${done && h.priceDate ? `<small>${fDateS(h.priceDate)}</small>` : ''}</span>
+    <span class="c-val">${eur(c.value)}</span>
+    ${ok(c.varPer) || !couponOnly(h) ? `<span class="c-per ${cls(c.varPer)}" data-l="${esc(RLABEL[S.range])}">${pct(c.varPer)}${part ? '*' : ''}<small>${eurS(c.plPer)}</small></span>`
+      : `<span class="c-per flat" data-l="${esc(RLABEL[S.range])}">${pct(couponOnly(h).y)}<small>solo cedole</small></span>`}
+    <span class="c-tot ${cls(c.varTot)}">${pct(c.varTot)}<small>${eurS(c.plTot)}</small></span>
+    <span class="c-spark">${spark(h)}</span>
+  </button>`;
+}
+
+/* --- confronto con gli indici --- */
+function benchVal(b, r){ const v = b && b.r ? b.r[r] : null; return ok(v) ? v / 100 : null; }
+function zbar(v, max, color){
+  if (!ok(v)) return '<div class="zbar"></div>';
+  const w = Math.min(50, Math.abs(v) / max * 50);
+  return `<div class="zbar"><span style="${v >= 0 ? 'left:50%' : 'right:50%'};width:${w.toFixed(1)}%;background:${color}"></span></div>`;
+}
+function benchCard(T){
+  const bs = (S.bench && S.bench.items) || [];
+  const head = `<div class="card-h"><h2>Confronto con il mercato</h2><button class="btn small" data-act="editBench">Aggiorna indici</button></div>`;
+  if (!bs.length) return `<section class="card">${head}<div class="chart-empty">Nessun indice di riferimento. Aggiungi i rendimenti di MSCI World e S&amp;P 500 con “Aggiorna indici”.</div></section>`;
+  if (S.range === 'CARICO' || S.range === '1G'){
+    return `<section class="card">${head}<p class="note" style="margin-top:4px">Scegli un periodo da 1 settimana a 5 anni in alto per confrontare il portafoglio con ${bs.map(b => esc(b.name)).join(' e ')}.</p>
+      <table class="rt"><tr><th>Indice</th>${PERF_KEYS.map(k => `<th>${k}</th>`).join('')}</tr>
+      ${bs.map(b => `<tr><td>${esc(b.name)}</td>${PERF_KEYS.map(k => `<td class="${cls(benchVal(b,k))}">${ok(benchVal(b,k)) ? nf(1).format(b.r[k]) : '—'}</td>`).join('')}</tr>`).join('')}</table></section>`;
+  }
+  const rows = [{ name:'Il tuo portafoglio', v:T.varPer, color:'var(--ink)', me:true }].concat(bs.map((b, i) => ({ name:b.name, v:benchVal(b, S.range), color:BENCH_COLORS[i % 3] })));
+  const max = Math.max(0.01, ...rows.map(r => ok(r.v) ? Math.abs(r.v) : 0));
+  let verdict = '';
+  if (ok(T.varPer)){
+    const diffs = bs.map(b => ({ b, d: ok(benchVal(b, S.range)) ? T.varPer - benchVal(b, S.range) : null })).filter(x => ok(x.d));
+    if (diffs.length) verdict = `<p class="note" style="margin:6px 0 0">${diffs.map(x => `${x.d >= 0 ? 'Batti' : 'Resti indietro rispetto a'} ${esc(x.b.name)} di <b class="${cls(x.d)}">${nf(1).format(Math.abs(x.d*100))} punti</b>`).join('; ')}${T.cov < T.n ? `, considerando ${T.cov} titoli su ${T.n} (${nf(0).format(T.covVal / T.value * 100)} % del valore).` : '.'}</p>`;
+  }
+  const hs = S.holdings.map(h => ({ h, v: calc(h, S.range).varPer })).filter(x => ok(x.v)).sort((a, b) => b.v - a.v);
+  return `<section class="card">${head}
+    ${rows.map(r => `<div class="cmp-row"><span>${r.me ? '<b>' + esc(r.name) + '</b>' : esc(r.name)}</span>${zbar(r.v, max, r.color)}<span class="cmp-val ${cls(r.v)}">${pct(r.v)}</span></div>`).join('')}
+    ${verdict}
+    ${hs.length ? `<table class="cmp-table"><tr><th>Titolo, ${esc(RLABEL[S.range])}</th><th>Rendimento</th>${bs.map(b => `<th>vs ${esc(b.name)}</th>`).join('')}</tr>
+      ${hs.map(x => `<tr><td>${esc(x.h.name)}</td><td class="${cls(x.v)}">${pct(x.v)}</td>${bs.map(b => { const bv = benchVal(b, S.range); const d = ok(bv) ? x.v - bv : null; return `<td class="${cls(d)}">${pp(d)}</td>`; }).join('')}</tr>`).join('')}</table>` : ''}
+  </section>`;
+}
+
+/* --- cedole e barriere --- */
+function incomeCard(){
+  const from = todayISO(), to = addISO(addMonthsISO(from.slice(0,8) + '01', 12), {days:-1});
+  const inF = h => S.incCat === 'ALL' || (S.incCat === 'TS' ? (h.cat === 'TS' || h.cat === 'OBB') : h.cat === S.incCat);
+  const ev = incomeEvents(from, to).filter(e => inF(e.h));
+  const fb = (id, label) => `<button data-inccat="${id}" aria-pressed="${S.incCat === id}">${label}</button>`;
+  const filt = S.holdings.some(h => h.income && h.cat === 'CERT') && S.holdings.some(h => h.income && (h.cat === 'TS' || h.cat === 'OBB'))
+    ? `<div class="ranges inc-f" role="group" aria-label="Filtra cedole">${fb('ALL','Tutti')}${fb('TS','Titoli di Stato')}${fb('CERT','Certificati')}</div>` : '';
+  const head = `<div class="card-h"><h2>Cedole e scadenze</h2><small>prossimi 12 mesi</small></div>${filt}`;
+  const hasIncome = S.holdings.some(h => h.income && inF(h));
+  const candidates = S.holdings.filter(h => ['TS','OBB','CERT'].includes(h.cat) && !h.income && inF(h));
+  if (!hasIncome){
+    return `<section class="card">${head}<div class="chart-empty">Imposta cedola, scadenza e barriere dei tuoi BTP e certificati per vedere gli incassi mese per mese.${candidates.length ? `<br><button class="btn small" style="margin-top:10px" data-open="${candidates[0].id}" data-edit="1">Imposta ${esc(candidates[0].name)}</button>` : ''}</div></section>`;
+  }
+  const months = [];
+  const m0 = from.slice(0,7);
+  for (let i = 0; i < 12; i++){ const k = addMonthsISO(m0 + '-01', i).slice(0,7); months.push({ k, gross:0, net:0, cond:false }); }
+  let tg = 0, tn = 0, condN = 0;
+  for (const e of ev){
+    if (e.type === 'maturity' || !ok(e.gross)) continue;
+    const m = months.find(x => x.k === e.date.slice(0,7)); if (!m) continue;
+    m.gross += e.gross; m.net += e.net; if (e.type === 'cond'){ m.cond = true; condN += e.gross; }
+    tg += e.gross; tn += e.net;
+  }
+  const max = Math.max(1, ...months.map(m => m.net));
+  const bars = months.map(m => `<div class="mcol" title="${esc(MESI[+m.k.slice(5)-1] + ' ' + m.k.slice(0,4))}: ${eur(m.net)} netti">
+      ${m.net > 0 ? `<span class="mamt">${nf(0).format(m.net)}</span>` : ''}
+      <div class="mbar ${m.net > 0 ? (m.cond ? 'cond' : '') : 'zero'}" style="height:${m.net > 0 ? Math.max(4, m.net / max * 92) : 2}px"></div></div>`).join('');
+  const labels = months.map(m => `<span>${MESI[+m.k.slice(5)-1]}</span>`).join('');
+  const list = ev.slice(0, 10).map(e => `<li><span class="d">${fDateS(e.date)}</span>
+      <span><button class="linkish" data-open="${e.h.id}" style="all:unset;cursor:pointer">${esc(e.h.name)}</button>${e.type === 'maturity' ? '<span class="tag">scadenza e rimborso</span>' : e.type === 'cond' ? '<span class="tag">cedola condizionata</span>' : ''}</span>
+      <span class="amt">${e.type === 'maturity' ? eur0(e.gross) : ok(e.net) ? eur(e.net) + ' <small>netti</small>' : '<small>imposta la cedola</small>'}</span></li>`).join('');
+  const certs = S.holdings.filter(h => inF(h) && h.income && h.income.kind === 'cert' && (ok(h.income.barrierCapital) || ok(h.income.barrierCoupon)));
+  const barriers = certs.map(h => barrierHTML(h)).join('');
+  const missing = candidates.length ? `<p class="note" style="margin:10px 0 0">${candidates.length === 1 ? '1 titolo' : candidates.length + ' titoli'} senza dati cedola: <button class="btn small" data-open="${candidates[0].id}" data-edit="1">Imposta ${esc(candidates[0].name)}</button></p>` : '';
+  return `<section class="card">${head}
+    <div class="cmp-row" style="grid-template-columns:1fr auto"><span>Incasso atteso, netto</span><span class="cmp-val">${eur(tn)}</span></div>
+    <div class="cmp-row" style="grid-template-columns:1fr auto;padding-top:0"><small>lordo ${eur(tg)}${condN ? `, di cui ${eur(condN)} lordi condizionati (righe tratteggiate)` : ''}</small><span></span></div>
+    <div class="months">${bars}</div><div class="mlab">${labels}</div>
+    ${list ? `<ul class="events">${list}</ul>` : ''}
+    ${barriers}${missing}
+  </section>`;
+}
+function barrierHTML(h){
+  const inc = h.income, w = inc.worst, bk = inc.barrierCoupon, bc = inc.barrierCapital;
+  const scale = Math.max(130, ok(w) ? w + 10 : 0);
+  const pos = v => (Math.max(0, Math.min(scale, v)) / scale * 100).toFixed(1) + '%';
+  let status = 'Inserisci il livello attuale del sottostante peggiore', sc = 'flat';
+  if (ok(w)){
+    if (ok(bc) && w < bc){ status = `Sotto la barriera del capitale di ${nf(1).format(bc - w)} punti`; sc = 'down'; }
+    else if (ok(bk) && w < bk && !inc.fixed){ status = `Sotto la barriera cedola di ${nf(1).format(bk - w)} punti: cedola a rischio`; sc = 'down'; }
+    else { const ref = ok(bk) ? bk : bc; status = `${nf(1).format(w - ref)} punti sopra la barriera ${ok(bk) ? 'cedola' : 'del capitale'} (margine ${nf(1).format((w / ref - 1) * 100)} %)`; sc = w - ref < 10 ? 'flat' : 'up'; }
+  }
+  return `<div class="barrier"><h3>${esc(h.name)}</h3><small>${esc(inc.underlyings || 'sottostanti non indicati')}${inc.updated ? `, livello aggiornato al ${fDateS(inc.updated)}` : ''}</small>
+    <div class="gauge" style="--bc:${ok(bc) ? pos(bc) : '0%'};--bk:${ok(bk) ? pos(bk) : (ok(bc) ? pos(bc) : '0%')}">
+      ${ok(bc) ? `<i style="left:${pos(bc)}"><span>capitale ${nf(0).format(bc)}%</span></i>` : ''}
+      ${ok(bk) && bk !== bc ? `<i style="left:${pos(bk)}"><span>cedola ${nf(0).format(bk)}%</span></i>` : ''}
+      <i style="left:${pos(100)};opacity:.35"><span>100%</span></i>
+      ${ok(w) ? `<i class="now" style="left:${pos(w)}"><span>ora ${nf(1).format(w)}%</span></i>` : ''}
+    </div><p class="note ${sc}" style="margin:0">${status}</p></div>`;
+}
+
+/* ---------- dialoghi ---------- */
+const dlg = $('#dlg');
+function openDlg(html){ dlg.innerHTML = html; if (!dlg.open) dlg.showModal(); }
+function closeDlg(){ if (dlg.open) dlg.close(); S.openId = null; }
+dlg.addEventListener('close', () => { S.openId = null; });
+dlg.addEventListener('click', e => { if (e.target === dlg) closeDlg(); });
+
+function perfTable(h){
+  const bs = (S.bench && S.bench.items) || [];
+  const rows = [{ name:h.name, r:h.perf ? h.perf.r : {} , me:true }].concat(bs.map(b => ({ name:b.name, r:b.r })));
+  return `<table class="rt"><tr><th></th>${PERF_KEYS.map(k => `<th>${k}</th>`).join('')}</tr>
+    ${rows.map(x => `<tr><td>${x.me ? '<b>' + esc(x.name) + '</b>' : esc(x.name)}</td>${PERF_KEYS.map(k => { const v = x.r && ok(x.r[k]) ? x.r[k] : null; return `<td class="${cls(v)}">${ok(v) ? nf(1).format(v) : '—'}</td>`; }).join('')}</tr>`).join('')}
+  </table>`;
+}
+function detail(id, panel){
+  const h = S.holdings.find(x => x.id === id); if (!h) return closeDlg();
+  S.openId = id;
+  if (!S.dRange) S.dRange = S.range;
+  const r = S.dRange, c = calc(h, r), cat = CAT[h.cat] || CAT.ALTRO, done = isComplete(h);
+  const H = S.hist[h.id] || [];
+  const perfNote = h.perf ? `Rendimenti in % (in EUR) al ${fDate(h.perf.asOf)}${h.perf.source ? ', fonte ' + esc(h.perf.source) : ''}.` : '';
+  openDlg(`
+    <div class="dlg-h"><span class="cat-dot" style="--cat:${cat.color};margin-top:8px"></span>
+      <div><h2>${esc(h.name)}</h2><small>${esc([h.isin, cat.label].filter(Boolean).join(', '))}</small></div>
+      <button class="x" data-act="close" aria-label="Chiudi">×</button></div>
+    <div class="dlg-b">
+      <div class="d-stats">
+        <div><div class="k">Valore</div><div class="v">${eur(c.value)}</div>${done ? `<div class="s flat">${nf(Number.isInteger(h.qty)?0:2).format(h.qty)} × ${px(h.price)}${h.quote === 'pct' ? ' %' : ''}${c.acc ? `, rateo ${eur(c.acc)}` : ''}</div>` : ''}</div>
+        <div><div class="k">Carico</div><div class="v">${eur(c.cost)}</div>${done ? `<div class="s flat">PMC ${px(h.pmc)}</div>` : ''}</div>
+        <div><div class="k">Dal carico</div><div class="v ${cls(c.plTot)}">${eurS(c.plTot)}</div><div class="s ${cls(c.varTot)}">${pct(c.varTot)}</div></div>
+        <div><div class="k">${r === 'CARICO' ? 'Netto stimato' : esc(RLABEL[r])}</div>${r === 'CARICO'
+          ? `<div class="v ${cls(c.plTot)}">${eurS(ok(c.plTot) ? (c.plTot > 0 ? c.plTot * (1 - taxRate(h)/100) : c.plTot) : null)}</div><div class="s flat">aliquota ${nf(1).format(taxRate(h))} %</div>`
+          : `<div class="v ${cls(c.plPer)}">${eurS(c.plPer)}</div><div class="s ${cls(c.varPer)}">${pct(c.varPer)}${c.base && c.base.date ? ` <span class="partial">dal ${fDateS(c.base.date)}</span>` : ''}</div>`}</div>
+      </div>
+      ${h.est ? `<div class="bankbox" style="margin-bottom:12px">La quantità (${nf(0).format(h.qty)}) è stimata dal valore indicato dalla banca. Verificala nella scheda del titolo e correggila con “Modifica”.</div>` : ''}
+      <div class="ranges" id="dRanges">${RANGES.map(x => `<button data-drange="${x[0]}" aria-pressed="${r === x[0]}">${x[1]}</button>`).join('')}</div>
+      ${done && (H.length >= 10 || (!h.perf && H.length >= 3)) ? `<div class="chart" id="dChart"></div>
+        <p class="note">Linea tratteggiata: il tuo prezzo medio di carico. Storico dal ${fDate(H[0][0])} al ${fDate(H[H.length-1][0])}, ${nf(0).format(H.length)} prezzi.</p>` : ''}
+      ${(!done || H.length < 10) && h.perf ? `<div class="chart" id="dPerf"></div><p class="note">Andamento nel periodo scelto, ricostruito dai rendimenti per periodo (100 = inizio periodo; con “Dal carico” mostra 5 anni): indica la tendenza, non le oscillazioni giornaliere. Per il grafico giornaliero importa lo storico prezzi.</p>` : ''}
+      ${h.perf || (S.bench && S.bench.items && S.bench.items.length) ? `${perfTable(h)}<p class="note" style="margin-top:-6px">${perfNote}</p>` : ''}
+      ${!done ? `<div class="bankbox" style="margin-bottom:14px">Titolo importato dalla schermata della banca senza quantità. Inserisci la quantità posseduta: prezzo attuale e di carico li ricavo dai valori della banca.</div>` : (H.length < 10 && !h.perf ? `<p class="note">Ancora nessuno storico prezzi: importalo da un CSV oppure aggiorna il prezzo ogni giorno, e qui comparirà il grafico.</p>` : '')}
+      <div class="actions">
+        <button class="btn ${done ? '' : 'primary'}" data-act="edit">${done ? 'Modifica' : 'Inserisci la quantità'}</button>
+        ${done ? `<button class="btn" data-act="panel" data-p="price">Aggiorna prezzo</button><button class="btn" data-act="panel" data-p="import">Importa storico</button>` : ''}
+        <button class="btn" data-act="panel" data-p="perf">Rendimenti per periodo</button>
+        ${h.income && h.income.anchor ? '<button class="btn" data-act="panel" data-p="coupons">Cedole incassate</button>' : ''}
+        ${h.isin && /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(h.isin) && (h.cat === 'ETF' || h.cat === 'ETC') ? `<a class="btn" href="https://www.justetf.com/it/etf-profile.html?isin=${encodeURIComponent(h.isin)}" target="_blank" rel="noopener">Scheda su justETF</a>` : ''}
+        <button class="btn danger" data-act="delete">Elimina titolo</button>
+      </div>
+      <div id="dPanel"></div>
+    </div>`);
+  if (done && (H.length >= 10 || (!h.perf && H.length >= 3))){
+    const pts = seriesFor(h, r);
+    mountChart($('#dChart'), pts, {
+      h:250, aria:'Andamento del prezzo di ' + h.name, refs:[{ v:h.pmc, label:'Carico ' + px(h.pmc) }],
+      empty:'Lo storico non copre questo periodo.', trendBase: pts.length ? pts[0][1] : undefined,
+      tip:(i, p) => `${fDate(p[i][0])}<br><b>${px(p[i][1])}</b><br>dal carico ${pct(p[i][1] / h.pmc - 1)}<br>da inizio periodo ${pct(p[i][1] / p[0][1] - 1)}`
+    });
+  }
+  const dp = $('#dPerf');
+  if (dp){
+    const from = (r !== 'CARICO' && r !== '1G') ? rangeStart(r) : null;
+    const raw = perfSeries(h.perf), w = from ? raw.filter(p => p[0] >= addISO(from, {days:-10})) : raw;
+    const pts = normalize(w.length >= 2 ? w : raw);
+    const bs = (S.bench && S.bench.items) || [];
+    const series = [{ name:h.name, color:cat.color, pts, dots:true, w:2.6 }].concat(bs.map((b, i) => ({ name:b.name, color:BENCH_COLORS[(i + 1) % 3], dash:true, pts:normalize(benchIndex(b, 100).filter(p => pts[0] && p[0] >= addISO(pts[0][0], {days:-10}))) })));
+    mountMulti(dp, series, { h:250, fmt:v => nf(0).format(v), aria:'Andamento di ' + h.name, refs:[{ v:100, label:'inizio periodo' }] });
+  }
+  if (panel) showPanel(panel);
+}
+function perfInputs(prefix, r){
+  return `<div class="perfgrid">${PERF_KEYS.map(k => `<label class="f">${k}<input inputmode="decimal" data-${prefix}="${k}" value="${r && ok(r[k]) ? fmtIn(r[k], 2) : ''}"></label>`).join('')}</div>`;
+}
+function readPerf(prefix){
+  const r = {}; let n = 0;
+  document.querySelectorAll(`[data-${prefix}]`).forEach(inp => { const v = parseNum(inp.value); if (ok(v)){ r[inp.dataset[prefix]] = v; n++; } });
+  return n ? r : null;
+}
+function showPanel(p){
+  const h = S.holdings.find(x => x.id === S.openId); if (!h) return;
+  const el = $('#dPanel'); if (!el) return;
+  if (p === 'price'){
+    el.innerHTML = `<div class="panel"><h3>Aggiorna prezzo</h3><p>Il prezzo viene salvato anche nello storico: aggiornandolo ogni giorno il grafico si costruisce da solo.${h.quote === 'pct' ? ' Per titoli di Stato e obbligazioni inserisci il corso secco (es. 101,25).' : ''}</p>
+      <div class="form"><label class="f">Prezzo<input id="pPrice" inputmode="decimal" value="${fmtIn(h.price)}"></label>
+      <label class="f">Data<input id="pDate" type="date" max="${todayISO()}" value="${todayISO()}"></label></div>
+      <p class="err" id="pErr"></p><div class="actions"><button class="btn primary" data-act="savePrice">Salva prezzo</button></div></div>`;
+    $('#pPrice').focus(); $('#pPrice').select();
+  } else if (p === 'import'){
+    if (!isComplete(h)){ el.innerHTML = `<div class="panel"><p>Per importare lo storico prezzi serve prima la quantità. Intanto puoi inserire i rendimenti per periodo.</p><button class="btn small" data-act="panel" data-p="perf">Rendimenti per periodo</button></div>`; return; }
+    const H = S.hist[h.id] || [];
+    el.innerHTML = `<div class="panel"><h3>Importa storico prezzi</h3>
+      <p>Scarica lo storico in CSV da un sito di quotazioni (Borsa Italiana, investing.com, Yahoo Finanza, MarketScreener) e incollalo qui, o scegli il file. Servono una colonna data e una colonna di chiusura; le date già presenti vengono aggiornate.</p>
+      <textarea id="csv" placeholder="Data;Chiusura&#10;01/10/2026;23,45&#10;30/09/2026;23,12"></textarea>
+      <div class="actions" style="margin-top:10px;align-items:center"><input type="file" id="csvFile" accept=".csv,.txt,text/csv,text/plain">
+        <button class="btn primary" data-act="doImport">Importa</button>
+        ${H.length ? `<button class="btn danger" data-act="clearHist">Svuota storico</button>` : ''}</div>
+      <p class="err" id="iErr"></p></div>`;
+    $('#csvFile').addEventListener('change', async e => { const f = e.target.files[0]; if (f) $('#csv').value = await f.text(); });
+  } else if (p === 'coupons'){
+    const inc = h.income || {};
+    const from = h.buyDate || addISO(todayISO(), {years:-3});
+    const dates = couponDates(inc, from, todayISO());
+    const missed = new Set(inc.missed || []);
+    const per = couponPer(h);
+    el.innerHTML = `<div class="panel"><h3>Cedole incassate</h3>
+      <p>${h.buyDate ? 'Dalla data del primo acquisto' : 'Ultimi 3 anni (inserisci la data del primo acquisto per partire da lì)'}. Togli la spunta alle cedole che non sono state pagate${inc.kind === 'cert' ? ' (sottostante sotto la barriera cedola)' : ''}.</p>
+      ${dates.length ? `<div class="cpn-list">${dates.map(d => `<label class="chk"><input type="checkbox" data-cpd="${d}" ${missed.has(d) ? '' : 'checked'}> ${fDate(d)} <small>${ok(per) ? eur(per) + ' lordi' : ''}</small></label>`).join('')}</div>` : '<p>Nessun pagamento nel periodo.</p>'}
+      <div class="actions" style="margin-top:10px"><button class="btn primary" data-act="saveCoupons">Salva</button></div></div>`;
+  } else if (p === 'perf'){
+    el.innerHTML = `<div class="panel"><h3>Rendimenti per periodo, in %</h3>
+      <p>Se non hai lo storico prezzi, la dashboard usa questi rendimenti per i periodi. Li trovi nella scheda del titolo su justETF o extraETF (performance in EUR).</p>
+      ${perfInputs('pf', h.perf && h.perf.r)}
+      <div class="form" style="margin-top:10px"><label class="f">Aggiornati al<input id="pfDate" type="date" value="${h.perf && h.perf.asOf ? h.perf.asOf : todayISO()}"></label>
+      <label class="f">Fonte<input id="pfSrc" value="${esc(h.perf && h.perf.source || '')}" placeholder="es. justETF"></label></div>
+      <p class="err" id="pfErr"></p><div class="actions"><button class="btn primary" data-act="savePerf">Salva rendimenti</button>${h.perf ? '<button class="btn danger" data-act="clearPerf">Rimuovi</button>' : ''}</div></div>`;
+  }
+  el.scrollIntoView({ block:'nearest', behavior:'smooth' });
+}
+
+function incomeFields(h, cat){
+  const inc = (h && h.income) || {};
+  const kind = inc.kind || (cat === 'CERT' ? 'cert' : 'bond');
+  const show = ['TS','OBB','CERT'].includes(cat) || !!(h && h.income);
+  return `<fieldset class="fs" id="incFs" ${show ? '' : 'hidden'}><legend>Cedole e scadenza</legend>
+    <label class="f">Tipo<select id="iKind"><option value="bond" ${kind === 'bond' ? 'selected' : ''}>Cedola fissa (BTP, obbligazioni)</option><option value="cert" ${kind === 'cert' ? 'selected' : ''}>Cedola condizionata (certificati)</option><option value="none">Nessuna cedola</option></select></label>
+    <label class="f">Pagamenti all'anno<select id="iFreq">${[1,2,4,12].map(f => `<option value="${f}" ${(inc.freq || (kind === 'cert' ? 4 : 2)) === f ? 'selected' : ''}>${({1:'1, annuale',2:'2, semestrale',4:'4, trimestrale',12:'12, mensile'})[f]}</option>`).join('')}</select></label>
+    <label class="f" data-k="bond">Cedola annua lorda (%)<input id="iRate" inputmode="decimal" value="${fmtIn(inc.rate, 3)}"></label>
+    <label class="f" data-k="cert">Cedola per periodo (%)<input id="iCoupon" inputmode="decimal" value="${fmtIn(inc.coupon, 3)}"></label>
+    <label class="f">Data di un pagamento<input id="iAnchor" type="date" value="${inc.anchor || ''}"><span class="hint">Una qualsiasi, passata o futura: le altre le calcolo io.</span></label>
+    <label class="f">Scadenza<input id="iMat" type="date" value="${inc.maturity || ''}"></label>
+    <label class="f" data-k="cert">Capitale nominale investito (€)<input id="iNom" inputmode="decimal" value="${fmtIn(inc.nominal, 2)}" placeholder="${h && h.bank ? fmtIn(Math.round(h.bank.cost), 0) : ''}"></label>
+    <label class="f" data-k="cert">Sottostanti<input id="iUnd" value="${esc(inc.underlyings || '')}" placeholder="es. Enel, Intesa, Stellantis"></label>
+    <label class="f" data-k="cert">Barriera cedola (% dello strike)<input id="iBk" inputmode="decimal" value="${fmtIn(inc.barrierCoupon, 2)}"></label>
+    <label class="f" data-k="cert">Barriera capitale (% dello strike)<input id="iBc" inputmode="decimal" value="${fmtIn(inc.barrierCapital, 2)}"></label>
+    <label class="f" data-k="cert">Livello attuale del peggiore (% dello strike)<input id="iWorst" inputmode="decimal" value="${fmtIn(inc.worst, 2)}"><span class="hint">Lo trovi sul sito dell'emittente, nella scheda del certificato.</span></label>
+    <label class="chk" data-k="cert"><input type="checkbox" id="iMem" ${inc.memory ? 'checked' : ''}> Effetto memoria</label>
+    <label class="chk" data-k="cert"><input type="checkbox" id="iFixed" ${inc.fixed ? 'checked' : ''}> Cedola fissa, pagata comunque</label>
+  </fieldset>`;
+}
+function syncIncomeKind(){
+  const k = $('#iKind') && $('#iKind').value;
+  document.querySelectorAll('#incFs [data-k]').forEach(el => { el.hidden = k === 'none' || el.dataset.k !== k; });
+  document.querySelectorAll('#iFreq,#iAnchor,#iMat').forEach(el => { el.closest('label').hidden = k === 'none'; });
+}
+function editForm(id){
+  const h = id ? S.holdings.find(x => x.id === id) : null;
+  const done = h && isComplete(h);
+  const cat = h ? h.cat : 'ETF';
+  const quote = h ? (h.quote || CAT[cat].quote) : CAT[cat].quote;
+  const tax = h && ok(h.tax) ? h.tax : CAT[cat].tax;
+  openDlg(`
+    <div class="dlg-h"><h2>${h ? (done ? 'Modifica ' + esc(h.name) : 'Completa ' + esc(h.name)) : 'Aggiungi titolo'}</h2><button class="x" data-act="${h ? 'back' : 'close'}" aria-label="Chiudi">×</button></div>
+    <div class="dlg-b"><div class="form" id="eForm" data-id="${h ? h.id : ''}">
+      ${h && !done && h.bank ? `<div class="bankbox">Dalla banca: valore ${eur(h.bank.value)}, carico ${eur(h.bank.cost)}. Basta la quantità: lascia vuoti prezzo e carico e li calcolo io. Puoi anche salvare solo i dati della cedola e completare la quantità più tardi.<br><span id="derived"></span></div>` : ''}
+      <label class="f full">Nome<input id="eName" value="${esc(h ? h.name : '')}" required placeholder="Es. iShares Core MSCI World"></label>
+      <label class="f">ISIN o ticker<input id="eIsin" value="${esc(h ? h.isin || '' : '')}" placeholder="IE00B4L5Y983" autocapitalize="characters"></label>
+      <label class="f">Categoria<select id="eCat">${CATS.map(c => `<option value="${c.id}" ${c.id === cat ? 'selected' : ''}>${c.label}</option>`).join('')}</select></label>
+      <label class="f">Come è quotato<select id="eQuote"><option value="unit" ${quote === 'unit' ? 'selected' : ''}>Prezzo per quota</option><option value="pct" ${quote === 'pct' ? 'selected' : ''}>% del nominale (BTP, obbligazioni)</option></select></label>
+      <label class="f"><span id="eQtyL">${quote === 'pct' ? 'Valore nominale (€)' : 'Quantità'}</span><input id="eQty" inputmode="decimal" value="${done ? fmtIn(h.qty, 4) : ''}"></label>
+      <label class="f">Prezzo medio di carico<input id="ePmc" inputmode="decimal" value="${done ? fmtIn(h.pmc) : ''}"></label>
+      <label class="f">Prezzo attuale<input id="ePrice" inputmode="decimal" value="${done ? fmtIn(h.price) : ''}"></label>
+      <label class="f">Data del prezzo<input id="ePDate" type="date" value="${h && h.priceDate ? h.priceDate : todayISO()}"></label>
+      <label class="f">Primo acquisto (facoltativo)<input id="eBuy" type="date" value="${h && h.buyDate ? h.buyDate : ''}"><span class="hint">Se è dentro il periodo scelto, il confronto parte dal tuo carico.</span></label>
+      <label class="f">Aliquota sulle plusvalenze<select id="eTax"><option value="26" ${tax === 26 ? 'selected' : ''}>26 %</option><option value="12.5" ${tax === 12.5 ? 'selected' : ''}>12,5 % (titoli di Stato)</option></select></label>
+      ${incomeFields(h, cat)}
+    </div><p class="err" id="eErr"></p></div>
+    <div class="dlg-f"><button class="btn" data-act="${h ? 'back' : 'close'}">Annulla</button><button class="btn primary" data-act="saveEdit">${h ? 'Salva modifiche' : 'Aggiungi'}</button></div>`);
+  const upd = () => {
+    const q = $('#eQuote').value; $('#eQtyL').textContent = q === 'pct' ? 'Valore nominale (€)' : 'Quantità';
+    const d = $('#derived'); if (!d || !h || !h.bank) return;
+    const qty = parseNum($('#eQty').value, true);
+    if (qty > 0){ const f = q === 'pct' ? qty / 100 : qty; d.textContent = `Prezzo attuale ${px(h.bank.value / f)}, prezzo di carico ${px(h.bank.cost / f)}.`; }
+    else d.textContent = '';
+  };
+  $('#eCat').addEventListener('change', e => {
+    const c = CAT[e.target.value]; $('#eQuote').value = c.quote; $('#eTax').value = String(c.tax);
+    const fs = $('#incFs'); if (fs){ const show = ['TS','OBB','CERT'].includes(c.id); fs.hidden = !show; if (show) $('#iKind').value = c.id === 'CERT' ? 'cert' : 'bond'; syncIncomeKind(); }
+    upd();
+  });
+  $('#eQuote').addEventListener('change', upd);
+  $('#eQty').addEventListener('input', upd);
+  $('#iKind').addEventListener('change', syncIncomeKind);
+  syncIncomeKind();
+  (h && !done ? $('#eQty') : $('#eName')).focus();
+}
+function readIncome(){
+  const fs = $('#incFs'); if (!fs || fs.hidden) return undefined;
+  const kind = $('#iKind').value; if (kind === 'none') return null;
+  const n = (id, intLike) => { const v = parseNum($(id).value, intLike); return ok(v) ? v : null; };
+  const inc = { kind, freq: +$('#iFreq').value, anchor: $('#iAnchor').value || null, maturity: $('#iMat').value || null };
+  if (kind === 'bond') inc.rate = n('#iRate');
+  else Object.assign(inc, { coupon:n('#iCoupon'), nominal:n('#iNom', true), underlyings:$('#iUnd').value.trim(), barrierCoupon:n('#iBk'), barrierCapital:n('#iBc'), worst:n('#iWorst'), memory:$('#iMem').checked, fixed:$('#iFixed').checked });
+  if (kind === 'cert' && ok(inc.worst)) inc.updated = todayISO();
+  const cur = S.holdings.find(x => x.id === ($('#eForm') && $('#eForm').dataset.id));
+  if (cur && cur.income){
+    if (cur.income.missed) inc.missed = cur.income.missed;
+    if (cur.income.start) inc.start = cur.income.start;
+    if (kind === 'cert' && !ok(inc.worst) && ok(cur.income.worst)) inc.worst = cur.income.worst;
+  }
+  return inc;
+}
+function saveEdit(){
+  const id = $('#eForm').dataset.id;
+  const h = id ? S.holdings.find(x => x.id === id) : null;
+  const err = m => { $('#eErr').textContent = m; };
+  const name = $('#eName').value.trim(); if (!name) return err('Inserisci il nome del titolo.');
+  const quote = $('#eQuote').value, cat = $('#eCat').value;
+  const qty = parseNum($('#eQty').value, true);
+  const income = readIncome();
+  const common = { name, isin: $('#eIsin').value.trim().toUpperCase(), cat, quote, buyDate: $('#eBuy').value || null, tax: parseFloat($('#eTax').value) };
+  if (income !== undefined) common.income = income; 
+  if (!(qty > 0)){
+    if (h && h.bank && !isComplete(h)){
+      Object.assign(h, common); if (income === null) delete h.income;
+      store.savePortfolio(); S.dRange = null; render(); return detail(h.id);
+    }
+    return err('Inserisci una quantità maggiore di zero.');
+  }
+  const f = quote === 'pct' ? qty / 100 : qty;
+  let pmc = parseNum($('#ePmc').value), price = parseNum($('#ePrice').value);
+  if (!(pmc > 0) && h && h.bank) pmc = h.bank.cost / f;
+  if (!(price > 0) && h && h.bank) price = h.bank.value / f;
+  if (!(pmc > 0)) return err('Inserisci il prezzo medio di carico.');
+  if (!(price > 0)) return err('Inserisci il prezzo attuale.');
+  const priceDate = $('#ePDate').value || todayISO();
+  const rec = Object.assign({ id: h ? h.id : uid(), qty, pmc: round(pmc), price: round(price), priceDate }, common);
+  if (h){
+    const keep = { perf:h.perf, bank:h.bank, income:h.income };
+    Object.keys(h).forEach(k => delete h[k]);
+    Object.assign(h, rec);
+    if (keep.perf) h.perf = keep.perf;
+    if (keep.bank) h.bank = keep.bank;
+    if (income === undefined && keep.income) h.income = keep.income;
+    if (income === null) delete h.income;
+  } else { if (income === null) delete rec.income; S.holdings.push(rec); }
+  addPoint(rec.id, priceDate, rec.price);
+  store.savePortfolio(); store.saveHist(rec.id);
+  S.dRange = null;
+  render(); detail(rec.id);
+}
+const round = n => Math.round(n * 1e6) / 1e6;
+function addPoint(id, date, price){
+  const H = S.hist[id] = S.hist[id] || [];
+  const i = H.findIndex(p => p[0] === date);
+  if (i >= 0) H[i] = [date, price]; else { H.push([date, price]); H.sort((a, b) => a[0] < b[0] ? -1 : 1); }
+}
+function savePrice(){
+  const h = S.holdings.find(x => x.id === S.openId); if (!h) return;
+  const raw = $('#pDate').value || todayISO(), p = parseNum($('#pPrice').value);
+  if (raw > todayISO()){ $('#pErr').textContent = 'La data non può essere nel futuro.'; return; }
+  if (!(p > 0)){ $('#pErr').textContent = 'Inserisci un prezzo valido.'; return; }
+  const d = tradingDay(raw);
+  addPoint(h.id, d, p);
+  if (!h.priceDate || d >= h.priceDate){ h.price = p; h.priceDate = d; }
+  store.savePortfolio(); store.saveHist(h.id);
+  render(); detail(h.id);
+}
+function savePerf(){
+  const h = S.holdings.find(x => x.id === S.openId); if (!h) return;
+  const r = readPerf('pf'); if (!r){ $('#pfErr').textContent = 'Inserisci almeno un rendimento.'; return; }
+  h.perf = { asOf: $('#pfDate').value || todayISO(), source: $('#pfSrc').value.trim() || null, r };
+  store.savePortfolio(); render(); detail(h.id);
+}
+function doImport(){
+  const h = S.holdings.find(x => x.id === S.openId); if (!h) return;
+  let res;
+  try{ res = parseCSV($('#csv').value); }catch(e){ $('#iErr').textContent = e.message; return; }
+  const last = res.points[res.points.length - 1];
+  const ratio = last[1] / h.price;
+  for (const [d, v] of res.points) addPoint(h.id, d, v);
+  if (!h.priceDate || last[0] >= h.priceDate){ h.price = last[1]; h.priceDate = last[0]; }
+  store.savePortfolio(); store.saveHist(h.id);
+  render(); detail(h.id);
+  const msg = document.createElement('p');
+  const off = ratio > 1.5 || ratio < 0.67;
+  msg.className = off ? 'err' : 'ok';
+  msg.textContent = `Importati ${nf(0).format(res.points.length)} prezzi (${res.priceName}), dal ${fDate(res.points[0][0])} al ${fDate(last[0])}.` + (off ? ' Attenzione: l’ultimo prezzo è molto diverso da quello che avevi. Controlla che sia lo strumento giusto e la stessa valuta.' : '');
+  $('#dPanel').prepend(msg);
+}
+function benchForm(){
+  const items = (S.bench && S.bench.items && S.bench.items.length) ? S.bench.items : [{id:'msci', name:'MSCI World', r:{}}, {id:'sp500', name:'S&P 500', r:{}}];
+  openDlg(`<div class="dlg-h"><h2>Indici di riferimento</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div>
+    <div class="dlg-b"><p class="note" style="margin-top:0">Rendimenti in % e in EUR, per periodo. Li trovi per esempio sulle schede degli ETF iShares Core MSCI World (IE00B4L5Y983) e iShares Core S&amp;P 500 (IE00B5BMR087) su justETF o extraETF.</p>
+    ${items.map((b, i) => `<div class="panel" style="margin-top:10px"><label class="f" style="margin-bottom:8px">Nome<input data-bname="${i}" value="${esc(b.name)}"></label>${perfInputs('b' + i, b.r)}</div>`).join('')}
+    <div class="form" style="margin-top:12px"><label class="f">Aggiornati al<input id="bAsOf" type="date" value="${(S.bench && S.bench.asOf) || todayISO()}"></label>
+    <label class="f">Fonte<input id="bSrc" value="${esc((S.bench && S.bench.source) || '')}"></label></div>
+    <p class="err" id="bmErr"></p></div>
+    <div class="dlg-f"><button class="btn" data-act="close">Annulla</button><button class="btn primary" data-act="saveBench" data-n="${items.length}">Salva indici</button></div>`);
+}
+function saveBench(n){
+  const items = [];
+  for (let i = 0; i < n; i++){
+    const name = (document.querySelector(`[data-bname="${i}"]`).value || '').trim();
+    const r = readPerf('b' + i) || {};
+    const old = S.bench && S.bench.items && S.bench.items[i];
+    if (name) items.push({ id: old ? old.id : 'b' + i, name, proxy: old ? old.proxy : undefined, r });
+  }
+  S.bench = { asOf: $('#bAsOf').value || todayISO(), source: $('#bSrc').value.trim() || null, items };
+  store.saveBench(); closeDlg(); render();
+}
+function bulkForm(dateIn, keep){
+  const hs = S.holdings.filter(isComplete);
+  if (!hs.length){ openDlg(`<div class="dlg-h"><h2>Aggiorna prezzi</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div><div class="dlg-b"><p>Prima inserisci la quantità dei titoli: apri un titolo e scegli “Inserisci la quantità”.</p></div>`); return; }
+  const raw = dateIn || todayISO();
+  const d = tradingDay(raw);
+  const typed = keep || {};
+  openDlg(`<div class="dlg-h"><h2>Aggiorna prezzi</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div>
+    <div class="dlg-b"><p class="note" style="margin-top:0">Si registra un solo prezzo per giorno di Borsa. Se per la data scelta un prezzo esiste già, viene verificato e sostituito, non aggiunto. La variazione di 1 giorno confronta l'ultimo prezzo con la chiusura del giorno di Borsa precedente.</p>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
+        <label class="f" style="max-width:200px">Data<input id="bDate" type="date" max="${todayISO()}" value="${raw}"></label>
+        <small>${raw !== d ? `Borsa chiusa: il prezzo sarà registrato come chiusura di ${['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'][new Date(d + 'T12:00:00').getDay()]} ${fDate(d)}.` : (d === lastTradingDay() ? 'Prezzo di oggi.' : '')}</small>
+      </div>
+      <div class="bulk">${hs.map(h => {
+        const H = S.hist[h.id] || [];
+        const cur = H.find(p => p[0] === d), prev = prevPoint(H, d);
+        const val = typed[h.id] != null ? typed[h.id] : (cur ? fmtIn(cur[1]) : '');
+        return `<div class="n">${esc(h.name)}<br><small>${prev ? `chiusura precedente ${px(prev[1])} del ${fDateS(prev[0])}` : 'nessun prezzo precedente'}${cur ? `; già registrato ${px(cur[1])}` : ''}</small></div>
+          <div class="bi"><input inputmode="decimal" data-bid="${h.id}" data-prev="${prev ? prev[1] : ''}" data-prevd="${prev ? prev[0] : ''}" value="${esc(val)}" aria-label="Prezzo di ${esc(h.name)}"><small class="chg"></small></div>`;
+      }).join('')}</div>
+      <p class="err" id="bErr"></p></div>
+    <div class="dlg-f"><button class="btn" data-act="close">Annulla</button><button class="btn primary" data-act="saveBulk">Salva prezzi</button></div>`);
+  const preview = inp => {
+    const out = inp.parentNode.querySelector('.chg'), prev = parseFloat(inp.dataset.prev), p = parseNum(inp.value);
+    if (!(p > 0) || !(prev > 0)){ out.textContent = ''; out.className = 'chg'; return; }
+    const v = p / prev - 1;
+    out.textContent = `${pct(v)} vs ${fDateS(inp.dataset.prevd)}${Math.abs(v) > 0.15 ? ', controlla' : ''}`;
+    out.className = 'chg ' + (Math.abs(v) > 0.15 ? 'down' : cls(v));
+  };
+  document.querySelectorAll('[data-bid]').forEach(inp => { preview(inp); inp.addEventListener('input', () => preview(inp)); });
+  $('#bDate').addEventListener('change', e => {
+    const k = {}; document.querySelectorAll('[data-bid]').forEach(i => { if (i.value.trim()) k[i.dataset.bid] = i.value; });
+    if (e.target.value) bulkForm(e.target.value, e.target.value === raw ? k : {});
+  });
+}
+async function saveBulk(btn){
+  const raw = $('#bDate').value || todayISO();
+  if (raw > todayISO()){ $('#bErr').textContent = 'La data non può essere nel futuro.'; return; }
+  const d = tradingDay(raw);
+  const rows = [], bad = [], big = [];
+  document.querySelectorAll('[data-bid]').forEach(inp => {
+    if (!inp.value.trim()) return;
+    const p = parseNum(inp.value), h = S.holdings.find(x => x.id === inp.dataset.bid);
+    if (!(p > 0) || !h){ bad.push(h ? h.name : '?'); return; }
+    const prev = parseFloat(inp.dataset.prev);
+    if (prev > 0 && Math.abs(p / prev - 1) > 0.15) big.push(h.name);
+    rows.push({ h, p });
+  });
+  if (bad.length){ $('#bErr').textContent = 'Prezzo non valido per: ' + bad.join(', '); return; }
+  if (big.length && !btn.classList.contains('armed')){
+    $('#bErr').textContent = 'Variazione superiore al 15% rispetto alla chiusura precedente per: ' + big.join(', ') + '. Controlla il prezzo; se è corretto premi di nuovo.';
+    arm(btn, 'Conferma e salva'); return;
+  }
+  for (const { h, p } of rows){
+    addPoint(h.id, d, p);
+    if (!h.priceDate || d >= h.priceDate){ h.price = p; h.priceDate = d; }
+  }
+  closeDlg(); render();
+  await Promise.all(rows.map(({ h }) => store.saveHist(h.id)));
+  if (rows.length) store.savePortfolio();
+  render();
+}
+function exportBackup(){
+  const json = JSON.stringify({ app:'portafoglio', version:2, exportedAt:new Date().toISOString(), holdings:S.holdings, hist:S.hist, bench:S.bench }, null, 1);
+  openDlg(`<div class="dlg-h"><h2>Esporta backup</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div>
+    <div class="dlg-b"><p class="note" style="margin-top:0">Il backup contiene titoli, storico prezzi e indici. Puoi scaricarlo o copiare il testo.</p>
+    <textarea readonly id="bk">${esc(json)}</textarea><p class="err" id="xErr"></p></div>
+    <div class="dlg-f"><button class="btn" data-act="copyBk">Copia testo</button>${store.dl ? '<button class="btn primary" data-act="dlBk">Scarica file</button>' : ''}</div>`);
+}
+function importBackupForm(){
+  openDlg(`<div class="dlg-h"><h2>Ripristina da backup</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div>
+    <div class="dlg-b"><p class="note" style="margin-top:0">Incolla il testo di un backup esportato da qui. Sostituisce l'intero portafoglio attuale.</p>
+    <textarea id="rk"></textarea><div class="actions" style="margin-top:10px"><input type="file" id="rkFile" accept=".json,application/json,text/plain"></div><p class="err" id="rErr"></p></div>
+    <div class="dlg-f"><button class="btn" data-act="close">Annulla</button><button class="btn danger" data-act="doRestore">Sostituisci il portafoglio</button></div>`);
+  $('#rkFile').addEventListener('change', async e => { const f = e.target.files[0]; if (f) $('#rk').value = await f.text(); });
+}
+async function doRestore(btn){
+  let d; try{ d = JSON.parse($('#rk').value); }catch(e){ $('#rErr').textContent = 'Il testo non è un backup valido.'; return; }
+  if (!d || !Array.isArray(d.holdings)){ $('#rErr').textContent = 'Nel backup mancano i titoli.'; return; }
+  if (!arm(btn, 'Conferma: sostituisci tutto')) return;
+  const old = S.holdings.map(h => h.id);
+  S.holdings = d.holdings; S.hist = d.hist || {}; if (d.bench) S.bench = d.bench;
+  await store.savePortfolio(); if (d.bench) await store.saveBench();
+  for (const id of new Set([...old, ...S.holdings.map(h => h.id)])) await store.saveHist(id);
+  closeDlg(); render();
+}
+function arm(btn, label){
+  if (btn.classList.contains('armed')) return true;
+  btn.classList.add('armed'); const o = btn.textContent; btn.textContent = label;
+  setTimeout(() => { if (btn.isConnected){ btn.classList.remove('armed'); btn.textContent = o; } }, 4000);
+  return false;
+}
+
+/* ---------- eventi ---------- */
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button, a');
+  if (!t){ if (!e.target.closest('#menu')) closeMenu(); return; }
+  if (t.id !== 'btnMenu' && !t.closest('.menu-pop')) closeMenu();
+  if (t.dataset.inccat){ S.incCat = t.dataset.inccat; render(); return; }
+  if (t.dataset.pfcat){ S.pfCat = t.dataset.pfcat; render(); const c = $('#pfChart'); if (c) c.closest('.card').scrollIntoView({ block:'nearest' }); return; }
+  if (t.dataset.range){ S.range = t.dataset.range; S.dRange = null; try{ localStorage.setItem('pf-range', S.range); }catch(_){} render(); return; }
+  if (t.dataset.drange){ S.dRange = t.dataset.drange; detail(S.openId); return; }
+  if (t.dataset.open){ S.dRange = null; if (t.dataset.edit){ S.openId = t.dataset.open; editForm(t.dataset.open); } else detail(t.dataset.open, t.dataset.panel); return; }
+  const a = t.dataset.act;
+  if (t.id === 'btnAdd' || a === 'add') return editForm(null);
+  if (t.id === 'btnBulk'){ await refreshHist(); return bulkForm(); }
+  if (t.id === 'btnMenu'){ const m = $('#menu'); const o = m.classList.toggle('open'); t.setAttribute('aria-expanded', o); return; }
+  if (t.id === 'btnExport'){ closeMenu(); return exportBackup(); }
+  if (t.id === 'btnImport' || a === 'import'){ closeMenu(); return importBackupForm(); }
+  switch (a){
+    case 'close': return closeDlg();
+    case 'back': return S.openId ? detail(S.openId) : closeDlg();
+    case 'edit': return editForm(S.openId);
+    case 'panel': return showPanel(t.dataset.p);
+    case 'saveEdit': return saveEdit();
+    case 'savePrice': return savePrice();
+    case 'savePerf': return savePerf();
+    case 'saveCoupons': {
+      const h = S.holdings.find(x => x.id === S.openId); if (!h || !h.income) return;
+      const missed = [...document.querySelectorAll('[data-cpd]')].filter(i => !i.checked).map(i => i.dataset.cpd);
+      const keep = (h.income.missed || []).filter(d => !document.querySelector(`[data-cpd="${d}"]`));
+      h.income.missed = keep.concat(missed);
+      store.savePortfolio(); render(); return detail(h.id);
+    }
+    case 'clearPerf': { const h = S.holdings.find(x => x.id === S.openId); if (!h || !arm(t, 'Conferma: rimuovi')) return; delete h.perf; store.savePortfolio(); render(); return detail(h.id); }
+    case 'doImport': return doImport();
+    case 'saveBulk': return saveBulk(t);
+    case 'bulk': await refreshHist(); return bulkForm();
+    case 'editBench': return benchForm();
+    case 'saveBench': return saveBench(+t.dataset.n);
+    case 'clearHist': {
+      if (!arm(t, 'Conferma: svuota')) return;
+      S.hist[S.openId] = []; await store.saveHist(S.openId, true); render(); return detail(S.openId);
+    }
+    case 'delete': {
+      if (!arm(t, 'Conferma eliminazione')) return;
+      const id = S.openId; S.holdings = S.holdings.filter(h => h.id !== id); S.hist[id] = [];
+      store.savePortfolio(); store.saveHist(id, true); closeDlg(); return render();
+    }
+    case 'copyBk': { const ta = $('#bk'); ta.select(); try{ await navigator.clipboard.writeText(ta.value); t.textContent = 'Copiato'; }catch(_){ t.textContent = 'Testo selezionato'; } return; }
+    case 'dlBk': {
+      try{ await store.dl.save({ filename:'portafoglio-' + todayISO() + '.json', data:$('#bk').value }); }
+      catch(err){ if (err && err.code !== 'declined') $('#xErr').textContent = 'Download non disponibile: copia il testo.'; }
+      return;
+    }
+    case 'doRestore': return doRestore(t);
+  }
+});
+function closeMenu(){ const m = $('#menu'); if (m.classList.contains('open')){ m.classList.remove('open'); $('#btnMenu').setAttribute('aria-expanded', 'false'); } }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && dlg.open && e.target.matches('input:not([type=file]):not([type=checkbox])')){
+    const b = dlg.querySelector('[data-act="savePrice"],[data-act="saveEdit"],[data-act="saveBulk"],[data-act="savePerf"],[data-act="saveBench"]'); if (b){ e.preventDefault(); b.click(); }
+  }
+  if (e.key === 'Escape') closeMenu();
+});
+
+async function refreshHist(){
+  if (store.mode !== 'db' || !S.loaded) return;
+  await store.loadHist(S.holdings);
+  if (!dlg.open) render();
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshHist(); });
+
+/* ---------- tema chiaro / scuro ---------- */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  const b = document.getElementById('btnTheme');
+  if (b){ const lbl = t === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'; b.textContent = t === 'dark' ? '☀' : '☾'; b.setAttribute('aria-label', lbl); b.title = lbl; }
+}
+let theme = 'light';
+try { theme = localStorage.getItem('pf-theme') === 'dark' ? 'dark' : 'light'; } catch(e){}
+applyTheme(theme);
+document.getElementById('btnTheme').addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  applyTheme(theme);
+  try { localStorage.setItem('pf-theme', theme); } catch(e){}
+});
+
+/* ---------- avvio ---------- */
+renderRanges();
+(async () => {
+  await store.init();
+  store.start((kind, data) => {
+    if (kind === 'portfolio'){ S.holdings = data; S.loaded = true; }
+    else S.bench = data;
+    if (S.loaded && !dlg.open) render();
+    else if (S.loaded) render();
+  });
+})();
+})();
+
+
+</script>
+</body>
+</html>
