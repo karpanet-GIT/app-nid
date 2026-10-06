@@ -18,4 +18,7 @@ Apri `index.html` nel browser. Non serve installare niente né avviare un server
 
 ## Dove finiscono i dati
 
-Tutti i dati restano nel browser in cui usi l'app (`localStorage`, chiave `portafoglio-v2`) e non vengono inviati a nessun server. Se cancelli i dati del sito o cambi browser o dispositivo, il portafoglio non ti segue: usa **••• → Esporta backup** per salvarlo e **Ripristina da backup** per ricaricarlo.
+Dipende da dove apri l'app:
+
+- **File aperto nel browser:** i dati restano nel browser (`localStorage`, chiave `portafoglio-v2`) e non vengono inviati a nessun server. Se cancelli i dati del sito o cambi browser o dispositivo, il portafoglio non ti segue: usa **••• → Esporta backup** per salvarlo e **Ripristina da backup** per ricaricarlo.
+- **Artifact pubblicato su claude.ai:** i dati vengono salvati nel database dell'Artifact, legati al tuo utente, e ritrovi il portafoglio da qualsiasi dispositivo.
