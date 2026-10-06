@@ -2,18 +2,21 @@
 //
 // GET /api/quote?q=<ISIN o ticker>[&symbol=<ticker Yahoo>][&from=YYYY-MM-DD | &range=1mo]
 //
-// - q: ISIN (es. IE00B4L5Y983) o ticker Yahoo (es. SWDA.MI). Un ISIN si traduce in ticker con
-//   OpenFIGI, preferendo Borsa Italiana e poi le altre borse in euro; se non basta, con la
-//   ricerca di Yahoo Finance. Prezzi e storico vengono da Yahoo Finance.
-// - symbol: ticker già noto (lo restituisce una chiamata precedente); salta la ricerca.
+// - q: ISIN (es. IE00B4L5Y983) o ticker Yahoo (es. SWDA.MI). Per un ISIN la fonte principale è
+//   justETF (ETF, ETC e azioni, prezzi in euro). Se justETF non lo trova si passa a Yahoo
+//   Finance: l'ISIN si traduce in ticker con OpenFIGI, preferendo Borsa Italiana e poi le altre
+//   borse in euro, e se non basta con la ricerca di Yahoo. Yahoo limita spesso le richieste
+//   dai server (errore 429), quindi resta solo una riserva.
+// - symbol: ticker Yahoo già noto (lo restituisce una chiamata precedente); salta la ricerca.
 // - from: data ISO da cui partire con lo storico; in alternativa range (default 1mo).
 //
-// Risposta 200: { query, symbol, name, exchange, currency, price, date, history:[[dataISO, chiusura], ...] }
+// Risposta 200: { query, source, symbol, name, exchange, currency, price, date, history:[[dataISO, chiusura], ...] }
 // Errori: 400 parametri non validi, 404 titolo non trovato, 502 errore della fonte dati.
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36';
 const ISIN = /^[A-Z]{2}[A-Z0-9]{9}\d$/;
 const RANGES = ['5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'max'];
+const RANGE_DAYS = { '5d':7, '1mo':31, '3mo':92, '6mo':183, '1y':366, '2y':731, '5y':1827, '10y':3653, 'max':36500 };
 // Borse in ordine di preferenza: prima Milano, poi le altre in euro.
 // Codici OpenFIGI → suffisso del ticker Yahoo; codici borsa Yahoo per la ricerca.
 const FIGI_EXCH = [['IM', '.MI'], ['GY', '.DE'], ['GR', '.DE'], ['FP', '.PA'], ['NA', '.AS'], ['SM', '.MC'], ['BB', '.BR'], ['AV', '.VI'], ['GF', '.F']];
@@ -23,13 +26,35 @@ class HttpError extends Error {
   constructor(status, message){ super(message); this.status = status; }
 }
 
-async function yahoo(url){
+async function getJSON(url, source){
   let r;
   try{ r = await fetch(url, { headers: { 'User-Agent': UA, 'Accept': 'application/json' }, signal: AbortSignal.timeout(8000) }); }
-  catch(e){ throw new HttpError(502, 'Fonte dati non raggiungibile'); }
+  catch(e){ throw new HttpError(502, source + ' non raggiungibile'); }
   if (r.status === 404) return null;
-  if (!r.ok) throw new HttpError(502, 'Fonte dati: errore ' + r.status);
+  if (!r.ok) throw new HttpError(502, source + ': errore ' + r.status);
   return r.json();
+}
+const yahoo = url => getJSON(url, 'Yahoo Finance');
+
+// Prezzo e storico da justETF per ISIN, già in euro. La serie ha un valore per ogni giorno di
+// calendario (sabato e domenica ripetono il venerdì): si tengono solo i giorni feriali.
+async function justetf(isin, from, range){
+  const to = new Date().toISOString().slice(0, 10);
+  const start = from || new Date(Date.now() - RANGE_DAYS[range] * 864e5).toISOString().slice(0, 10);
+  const j = await getJSON(`https://www.justetf.com/api/etfs/${isin}/performance-chart?locale=it&currency=EUR&valuesType=MARKET_VALUE&reduceData=false&includeDividends=false&features=DIVIDENDS&dateFrom=${start}&dateTo=${to}`, 'justETF');
+  const last = j && j.latestQuote && j.latestQuote.raw;
+  if (!(last > 0) || !j.latestQuoteDate) return null;
+  const map = new Map();
+  for (const p of j.series || []){
+    const v = p && p.value && p.value.raw, w = new Date(p.date + 'T12:00:00Z').getUTCDay();
+    if (v > 0 && w !== 0 && w !== 6) map.set(p.date, v);
+  }
+  map.set(j.latestQuoteDate, last);
+  return {
+    source: 'justetf', symbol: isin, name: null, exchange: j.quoteTradingVenue || null, currency: 'EUR',
+    price: last, date: j.latestQuoteDate,
+    history: [...map.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1)
+  };
 }
 
 // Ticker Yahoo candidati per un ISIN, dalle quotazioni elencate da OpenFIGI.
@@ -75,6 +100,7 @@ async function chart(symbol, from, range){
   const date = m.regularMarketTime ? day(m.regularMarketTime) : null;
   if (date) map.set(date, m.regularMarketPrice);
   return {
+    source: 'yahoo',
     symbol: m.symbol || symbol,
     name: m.longName || m.shortName || null,
     exchange: m.fullExchangeName || m.exchangeName || null,
@@ -86,8 +112,10 @@ async function chart(symbol, from, range){
 }
 
 async function quote(q, symbol, from, range){
-  if (symbol){ const c = await chart(symbol, from, range); if (c) return c; }
   const isin = ISIN.test(q);
+  // Se justETF non risponde si prova comunque Yahoo; l'errore conta solo se anche Yahoo fallisce.
+  if (isin){ try{ const c = await justetf(q, from, range); if (c) return c; }catch(e){} }
+  if (symbol && symbol !== q){ const c = await chart(symbol, from, range); if (c) return c; }
   if (!isin){ const c = await chart(q, from, range); if (c) return c; }
   // Preferisci una quotazione in euro: prova al massimo tre ticker per fonte.
   let first = null;
