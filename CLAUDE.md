@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 "Il mio portafoglio" è un'app per seguire un portafoglio di titoli (ETF, ETC/ETN, azioni, titoli di Stato, obbligazioni, certificati, fondi). Sta tutta in un file, `index.html` (~1700 righe): CSS in `<style>`, JS in un unico `<script>` dentro una IIFE con `'use strict'`. Non ci sono build, dipendenze, linter né test. L'unica risorsa esterna è il font Figtree da Google Fonts.
 
-- **Avvio:** apri `index.html` nel browser, senza server.
+C'è anche una funzione serverless Vercel, `api/quote.js` (CommonJS, Node 18+, nessuna dipendenza): `GET /api/quote?q=<ISIN o ticker>[&symbol=][&from=YYYY-MM-DD|&range=]` restituisce `{symbol, name, currency, price, date, history:[[dataISO, chiusura]]}`. Traduce l'ISIN in ticker con OpenFIGI (preferisce Borsa Italiana, poi altre borse in euro; chiave facoltativa in `OPENFIGI_API_KEY`) e prende i prezzi da Yahoo Finance. Risponde 404 se il titolo non c'è (tipico di certificati e BTP).
+
+- **Avvio:** apri `index.html` nel browser, senza server. I prezzi automatici funzionano solo quando l'app è servita da Vercel (`vercel dev` in locale); da file o come Artifact si usa l'inserimento manuale.
 - **Verifica:** a mano nel browser, nel tema chiaro e in quello scuro e a larghezza da telefono.
 
 Testi della UI, commenti e nomi delle sezioni sono in italiano. Mantieni questa lingua.
@@ -22,9 +24,10 @@ Le sezioni sono separate da commenti `/* ---------- nome ---------- */`, in ques
 
 ## Modello dati
 
-- **Holding:** `{id, name, isin, cat, quote, qty, pmc, price, priceDate, buyDate, tax, perf?, bank?, income?}`.
+- **Holding:** `{id, name, isin, cat, quote, qty, pmc, price, priceDate, buyDate, tax, perf?, bank?, income?, feed?}`.
   - `quote: 'pct'` vuol dire prezzo in % del nominale (TS/OBB), quindi il controvalore è `qty/100 * price`. Usa sempre `factor(h)`.
   - Un titolo è "completo" (`isComplete`) se ha `qty`, `pmc` e `price` > 0. I titoli incompleti usano `bank.value/bank.cost` e i rendimenti `perf.r[periodo]` inseriti a mano.
+  - `feed: {symbol}` è il ticker trovato da `/api/quote`. Si salva solo dopo che il prezzo trovato torna con quello del titolo (`checkQuote`); da allora gli aggiornamenti scaricano solo gli ultimi giorni invece di 5 anni.
   - `income` è una cedola obbligazionaria (`kind:'bond'`) o un certificato (`kind:'cert'`, con barriere, memoria, `worst`, `missed`).
 - **Storico:** `S.hist[id]` è un array di `[dataISO, prezzo]` ordinato per data. Le funzioni di ricerca (`priceAt` usa la ricerca binaria) contano su quest'ordine.
 - **Periodi:** chiavi `1G 1S 1M 3M 6M 1A 3A 5A CARICO` (`RANGES`, `RDAYS`, `CAP`). `calc(h, r)` e `totals(r)` sono il cuore dei calcoli.

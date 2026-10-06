@@ -302,6 +302,9 @@ const RLABEL = Object.fromEntries(RANGES.map(r => [r[0], r[2]]));
 const CAP = {'1G':3,'1S':5,'1M':8,'3M':12,'6M':18,'1A':25,'3A':40,'5A':50,'CARICO':50};
 const MESI = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
 const BENCH_COLORS = ['#2F5BD3','#8A94A6','#0E8C7E'];
+// Funzione serverless (api/quote.js) per i prezzi automatici. Funziona quando l'app è servita da
+// Vercel; aperta come file o come Artifact si usa solo l'inserimento manuale.
+const QUOTE_API = location.protocol === 'file:' ? null : '/api/quote';
 
 /* ---------- stato ---------- */
 const S = { holdings:[], hist:{}, bench:null, range:'CARICO', dRange:null, openId:null, loaded:false, pfCat:'ALL', incCat:'ALL' };
@@ -1498,14 +1501,24 @@ function saveBench(n){
   S.bench = { asOf: $('#bAsOf').value || todayISO(), source: $('#bSrc').value.trim() || null, items };
   store.saveBench(); closeDlg(); render();
 }
+// Esito dell'ultimo aggiornamento automatico: il form manuale mostra solo i titoli rimasti.
+let auto = null;
 function bulkForm(dateIn, keep){
-  const hs = S.holdings.filter(isComplete);
-  if (!hs.length){ openDlg(`<div class="dlg-h"><h2>Aggiorna prezzi</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div><div class="dlg-b"><p>Prima inserisci la quantità dei titoli: apri un titolo e scegli “Inserisci la quantità”.</p></div>`); return; }
+  const all = S.holdings.filter(isComplete);
+  const hs = auto ? all.filter(h => auto.left.has(h.id)) : all;
+  const sug = auto ? auto.sug : {};
+  if (!all.length){ openDlg(`<div class="dlg-h"><h2>Aggiorna prezzi</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div><div class="dlg-b"><p>Prima inserisci la quantità dei titoli: apri un titolo e scegli “Inserisci la quantità”.</p></div>`); return; }
   const raw = dateIn || todayISO();
   const d = tradingDay(raw);
   const typed = keep || {};
+  if (!hs.length){
+    openDlg(`<div class="dlg-h"><h2>Aggiorna prezzi</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div>
+      <div class="dlg-b">${autoReport()}</div>
+      <div class="dlg-f"><button class="btn" data-act="bulkManual">Inserisci a mano</button><button class="btn primary" data-act="close">Fatto</button></div>`);
+    return;
+  }
   openDlg(`<div class="dlg-h"><h2>Aggiorna prezzi</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div>
-    <div class="dlg-b"><p class="note" style="margin-top:0">Si registra un solo prezzo per giorno di Borsa. Se per la data scelta un prezzo esiste già, viene verificato e sostituito, non aggiunto. La variazione di 1 giorno confronta l'ultimo prezzo con la chiusura del giorno di Borsa precedente.</p>
+    <div class="dlg-b">${auto ? autoReport() + `<h3 style="margin:16px 0 6px;font-size:15px">Da inserire a mano</h3>` : ''}<p class="note" style="margin-top:0">Si registra un solo prezzo per giorno di Borsa. Se per la data scelta un prezzo esiste già, viene verificato e sostituito, non aggiunto. La variazione di 1 giorno confronta l'ultimo prezzo con la chiusura del giorno di Borsa precedente.</p>
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
         <label class="f" style="max-width:200px">Data<input id="bDate" type="date" max="${todayISO()}" value="${raw}"></label>
         <small>${raw !== d ? `Borsa chiusa: il prezzo sarà registrato come chiusura di ${['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'][new Date(d + 'T12:00:00').getDay()]} ${fDate(d)}.` : (d === lastTradingDay() ? 'Prezzo di oggi.' : '')}</small>
@@ -1513,8 +1526,9 @@ function bulkForm(dateIn, keep){
       <div class="bulk">${hs.map(h => {
         const H = S.hist[h.id] || [];
         const cur = H.find(p => p[0] === d), prev = prevPoint(H, d);
-        const val = typed[h.id] != null ? typed[h.id] : (cur ? fmtIn(cur[1]) : '');
-        return `<div class="n">${esc(h.name)}<br><small>${prev ? `chiusura precedente ${px(prev[1])} del ${fDateS(prev[0])}` : 'nessun prezzo precedente'}${cur ? `; già registrato ${px(cur[1])}` : ''}</small></div>
+        const sg = sug[h.id] && sug[h.id].date === d ? sug[h.id] : null;
+        const val = typed[h.id] != null ? typed[h.id] : (cur ? fmtIn(cur[1]) : sg ? fmtIn(sg.price) : '');
+        return `<div class="n">${esc(h.name)}<br><small>${prev ? `chiusura precedente ${px(prev[1])} del ${fDateS(prev[0])}` : 'nessun prezzo precedente'}${cur ? `; già registrato ${px(cur[1])}` : ''}</small>${auto && auto.why[h.id] ? `<br><small class="chg down">${esc(auto.why[h.id])}</small>` : ''}</div>
           <div class="bi"><input inputmode="decimal" data-bid="${h.id}" data-prev="${prev ? prev[1] : ''}" data-prevd="${prev ? prev[0] : ''}" value="${esc(val)}" aria-label="Prezzo di ${esc(h.name)}"><small class="chg"></small></div>`;
       }).join('')}</div>
       <p class="err" id="bErr"></p></div>
@@ -1531,6 +1545,84 @@ function bulkForm(dateIn, keep){
     const k = {}; document.querySelectorAll('[data-bid]').forEach(i => { if (i.value.trim()) k[i.dataset.bid] = i.value; });
     if (e.target.value) bulkForm(e.target.value, e.target.value === raw ? k : {});
   });
+}
+function autoReport(){
+  if (!auto) return '';
+  const { done, off } = auto;
+  if (off) return `<p class="note" style="margin-top:0">${esc(off)}</p>`;
+  if (!done.length) return `<p class="note" style="margin-top:0">Nessun prezzo trovato automaticamente.</p>`;
+  return `<p class="ok" style="margin-top:0">${done.length === 1 ? '1 titolo aggiornato' : done.length + ' titoli aggiornati'} automaticamente:</p>
+    <div class="bulk" style="margin:6px 0 4px">${done.map(x => `<div class="n">${esc(x.h.name)}<br><small>${esc(x.sym)}${x.added ? `, ${nf(0).format(x.added)} ${x.added === 1 ? 'nuovo prezzo' : 'nuovi prezzi'} nello storico` : ''}</small></div>
+      <div class="bi" style="text-align:right">${px(x.price)}<br><small class="chg ${cls(x.chg)}">${ok(x.chg) ? pct(x.chg) + ' ' : ''}del ${fDateS(x.date)}</small></div>`).join('')}</div>`;
+}
+async function fetchQuote(h){
+  const H = S.hist[h.id] || [], f = h.feed;
+  const p = new URLSearchParams({ q: (h.isin || f.symbol).trim().toUpperCase() });
+  if (f && f.symbol) p.set('symbol', f.symbol);
+  // La prima volta scarica 5 anni di storico, poi solo gli ultimi giorni.
+  if (f && f.symbol && H.length) p.set('from', addISO(H[H.length - 1][0], { days: -7 }));
+  else p.set('range', '5y');
+  const r = await fetch(QUOTE_API + '?' + p, { signal: AbortSignal.timeout(20000) });
+  const j = await r.json().catch(() => null);
+  if (!j) throw new Error('servizio non disponibile');
+  if (r.status === 404 || r.status === 400) return null;
+  if (!r.ok || !(j.price > 0)) throw new Error(j.error || 'errore ' + r.status);
+  return j;
+}
+// Un titolo trovato per la prima volta va confrontato con i prezzi che hai già: se non tornano
+// (altra valuta, strumento sbagliato, BTP quotato diversamente) il prezzo resta da confermare.
+function checkQuote(h, q){
+  if (q.currency && q.currency !== 'EUR') return `Trovato ${q.symbol} in ${q.currency}: controlla e inserisci il prezzo in euro.`;
+  if (h.feed && h.feed.symbol === q.symbol) return null;
+  const ref = h.priceDate && nearestAt(q.history, h.priceDate, 5);
+  const v = ref ? ref.p[1] / h.price - 1 : q.price / h.price - 1, tol = ref ? 0.08 : 0.25;
+  return Math.abs(v) > tol ? `Trovato ${q.symbol} a ${px(ref ? ref.p[1] : q.price)}, ${pct(v)} rispetto al tuo prezzo del ${fDateS(h.priceDate)}: controlla che sia lo strumento giusto.` : null;
+}
+async function autoUpdate(){
+  await refreshHist();
+  const hs = S.holdings.filter(isComplete);
+  auto = null;
+  if (!hs.length || !QUOTE_API) return bulkForm();
+  const todo = hs.filter(h => (h.isin && h.isin.trim()) || (h.feed && h.feed.symbol));
+  auto = { done:[], left:new Set(hs.map(h => h.id)), sug:{}, why:{}, off:null };
+  for (const h of hs) if (!todo.includes(h)) auto.why[h.id] = 'Senza ISIN: inserisci il prezzo a mano.';
+  openDlg(`<div class="dlg-h"><h2>Aggiorna prezzi</h2><button class="x" data-act="close" aria-label="Chiudi">×</button></div>
+    <div class="dlg-b"><p class="note" style="margin-top:0" id="autoProg">Cerco i prezzi di ${todo.length === 1 ? '1 titolo' : todo.length + ' titoli'}…</p></div>`);
+  const run = auto;
+  let n = 0, fail = 0, got = 0;
+  const step = async h => {
+    let q = null;
+    try{ q = await fetchQuote(h); got++; }
+    catch(e){ fail++; }
+    const pr = $('#autoProg'); if (pr) pr.textContent = `Cerco i prezzi… ${++n} di ${todo.length}`;
+    if (!q){ if (!run.why[h.id]) run.why[h.id] = 'Prezzo non trovato automaticamente.'; return; }
+    const warn = checkQuote(h, q);
+    if (warn){
+      run.why[h.id] = warn;
+      // Precompila solo i prezzi in euro: un prezzo in dollari salvato per sbaglio falserebbe il valore.
+      if (!q.currency || q.currency === 'EUR') run.sug[h.id] = { price:q.price, date:tradingDay(q.date || todayISO()) };
+      return;
+    }
+    const before = (S.hist[h.id] || []).length;
+    for (const [d, v] of q.history) addPoint(h.id, d, v);
+    const Hn = S.hist[h.id], top = Hn[Hn.length - 1];
+    if (!h.priceDate || top[0] >= h.priceDate){ h.price = top[1]; h.priceDate = top[0]; }
+    h.feed = { symbol:q.symbol };
+    const prev = prevPoint(Hn, top[0]);
+    run.done.push({ h, sym:q.symbol, price:top[1], date:top[0], chg: prev ? top[1] / prev[1] - 1 : null, added: Hn.length - before });
+    run.left.delete(h.id);
+  };
+  const queue = todo.slice();
+  await Promise.all(Array.from({ length: Math.min(4, queue.length) }, async () => { while (queue.length) await step(queue.shift()); }));
+  // Servizio non raggiungibile (per esempio app aperta fuori da Vercel): tutto a mano.
+  if (todo.length && !got && fail) run.off = 'Aggiornamento automatico non disponibile: inserisci i prezzi a mano.';
+  if (run.done.length){
+    render();
+    await Promise.all(run.done.map(x => store.saveHist(x.h.id)));
+    store.savePortfolio();
+    render();
+  }
+  if (auto === run && $('#autoProg')) bulkForm();
 }
 async function saveBulk(btn){
   const raw = $('#bDate').value || todayISO();
@@ -1602,7 +1694,7 @@ document.addEventListener('click', async e => {
   if (t.dataset.open){ S.dRange = null; if (t.dataset.edit){ S.openId = t.dataset.open; editForm(t.dataset.open); } else detail(t.dataset.open, t.dataset.panel); return; }
   const a = t.dataset.act;
   if (t.id === 'btnAdd' || a === 'add') return editForm(null);
-  if (t.id === 'btnBulk'){ await refreshHist(); return bulkForm(); }
+  if (t.id === 'btnBulk') return autoUpdate();
   if (t.id === 'btnMenu'){ const m = $('#menu'); const o = m.classList.toggle('open'); t.setAttribute('aria-expanded', o); return; }
   if (t.id === 'btnExport'){ closeMenu(); return exportBackup(); }
   if (t.id === 'btnImport' || a === 'import'){ closeMenu(); return importBackupForm(); }
@@ -1624,7 +1716,8 @@ document.addEventListener('click', async e => {
     case 'clearPerf': { const h = S.holdings.find(x => x.id === S.openId); if (!h || !arm(t, 'Conferma: rimuovi')) return; delete h.perf; store.savePortfolio(); render(); return detail(h.id); }
     case 'doImport': return doImport();
     case 'saveBulk': return saveBulk(t);
-    case 'bulk': await refreshHist(); return bulkForm();
+    case 'bulk': return autoUpdate();
+    case 'bulkManual': auto = null; return bulkForm();
     case 'editBench': return benchForm();
     case 'saveBench': return saveBench(+t.dataset.n);
     case 'clearHist': {

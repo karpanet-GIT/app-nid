@@ -9,12 +9,14 @@ App web in un unico file (`index.html`) per seguire un portafoglio di titoli: ET
 - Mappa dei titoli (dimensione per valore, colore per variazione)
 - Confronto con indici di riferimento
 - Calendario di cedole e scadenze dei prossimi 12 mesi, con barriere dei certificati
-- Aggiornamento dei prezzi (anche tutti insieme) e importazione dello storico da CSV
+- Aggiornamento automatico dei prezzi e dello storico giornaliero (con l'app pubblicata su Vercel), inserimento manuale per i titoli non trovati come certificati e BTP, importazione dello storico da CSV
 - Tema chiaro e scuro
 
 ## Come usarla
 
 Apri `index.html` nel browser. Non serve installare niente né avviare un server.
+
+Per l'aggiornamento automatico dei prezzi pubblica la cartella su Vercel: la funzione `api/quote.js` cerca ogni titolo per ISIN e scarica prezzo e storico giornaliero. **Aggiorna prezzi** aggiorna da sola i titoli trovati e ti chiede a mano solo gli altri. Se un titolo viene trovato in un'altra valuta o con un prezzo che non torna con il tuo, non viene salvato finché non lo confermi.
 
 ## Dove finiscono i dati
 
