@@ -173,14 +173,21 @@ async function chart(symbol, from, range){
 
 async function quote(q, symbol, from, range){
   const isin = ISIN.test(q);
+  // Se una fonte non risponde si prova la successiva. Gli errori si raccolgono e, se nessuna
+  // fonte trova il titolo, finiscono tutti nel messaggio di errore.
+  const errs = [];
+  const attempt = async fn => { try{ return await fn(); }catch(e){ errs.push(e.message); return null; } };
+  let c = null;
   // Titolo già trovato su Borsa Italiana: si va direttamente lì.
-  if (isin && /^[A-Z0-9]{12}(\.MOT|-SEDX)$/.test(symbol)){
-    const c = symbol.endsWith('.MOT') ? await biMot(q, from, range) : await biSedex(q);
-    if (c) return c;
-  }
-  // Se una fonte non risponde si prova la successiva; l'errore conta solo se falliscono tutte.
-  if (isin){ try{ const c = await justetf(q, from, range); if (c) return c; }catch(e){} }
-  if (isin){ try{ const c = await borsaItaliana(q, from, range); if (c) return c; }catch(e){} }
+  if (isin && /^[A-Z0-9]{12}(\.MOT|-SEDX)$/.test(symbol)) c = await attempt(() => symbol.endsWith('.MOT') ? biMot(q, from, range) : biSedex(q));
+  if (!c && isin) c = await attempt(() => justetf(q, from, range));
+  if (!c && isin) c = await attempt(() => borsaItaliana(q, from, range));
+  if (!c) c = await attempt(() => yahooQuote(q, isin, symbol, from, range));
+  if (!c && errs.length) throw new HttpError(502, errs.join('; '));
+  return c;
+}
+
+async function yahooQuote(q, isin, symbol, from, range){
   if (symbol && symbol !== q && !/(\.MOT|-SEDX)$/.test(symbol)){ const c = await chart(symbol, from, range); if (c) return c; }
   if (!isin){ const c = await chart(q, from, range); if (c) return c; }
   // Preferisci una quotazione in euro: prova al massimo tre ticker per fonte.
