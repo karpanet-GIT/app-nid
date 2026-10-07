@@ -305,6 +305,8 @@ const BENCH_COLORS = ['#2F5BD3','#8A94A6','#0E8C7E'];
 // Funzione serverless (api/quote.js) per i prezzi automatici. Funziona quando l'app è servita da
 // Vercel; aperta come file o come Artifact si usa solo l'inserimento manuale.
 const QUOTE_API = location.protocol === 'file:' ? null : '/api/quote';
+// Funzione serverless (api/portfolio.js) che salva il portafoglio in un Gist privato di GitHub.
+const SYNC_API = QUOTE_API && '/api/portfolio';
 
 /* ---------- stato ---------- */
 const S = { holdings:[], hist:{}, bench:null, range:'CARICO', dRange:null, openId:null, loaded:false, pfCat:'ALL', incCat:'ALL' };
@@ -426,6 +428,7 @@ function parseCSV(text){
    sovrascrivere i titoli con uno stato vuoto. */
 const store = {
   mode:'local', db:null, uid:null, dl:null, synced:false, pending:new Set(),
+  remote:null, rev:null, dirty:false, busy:false, timer:null, needKey:false, syncErr:null,
   async init(){
     try{
       if (window.claude && typeof window.claude.use === 'function'){
@@ -434,6 +437,63 @@ const store = {
         if (db && user){ const id = await user.id(); if (id){ this.db = db; this.uid = id; this.mode = 'db'; } }
       }
     }catch(e){}
+    if (this.mode !== 'db' && SYNC_API) await this.initRemote();
+  },
+  /* modalità remote: il portafoglio sta in un Gist tramite /api/portfolio */
+  auth(){ let k = null; try{ k = localStorage.getItem('pf-key'); }catch(e){} return k ? { Authorization:'Bearer ' + k } : {}; },
+  async initRemote(){
+    let r;
+    try{ r = await fetch(SYNC_API, { headers:this.auth(), cache:'no-store' }); }catch(e){ return; }
+    if (r.status === 401){ this.mode = 'remote'; this.needKey = true; return; }
+    const d = await r.json().catch(() => null);
+    // 404 senza JSON: l'app non è su Vercel. 501: sincronizzazione non configurata. In entrambi i casi si resta in locale.
+    if (!d || r.status === 501) return;
+    if (!r.ok){ this.syncErr = 'Sincronizzazione non disponibile (' + (d.error || 'errore ' + r.status) + '): stai usando i dati salvati in questo browser, che non verranno sincronizzati.'; return; }
+    this.mode = 'remote'; this.remote = d;
+  },
+  queue(){
+    if (!this.synced) return false;
+    this.saveLocal(); this.dirty = true;
+    clearTimeout(this.timer); this.timer = setTimeout(() => this.push(), 800);
+    return true;
+  },
+  async push(){
+    if (this.busy || !this.dirty) return;
+    this.busy = true; this.dirty = false;
+    let ok = false;
+    try{
+      const r = await fetch(SYNC_API, { method:'PUT', headers:{ 'Content-Type':'application/json', ...this.auth() },
+        body: JSON.stringify({ holdings:S.holdings, hist:S.hist, bench:S.bench, base:this.rev }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok){ this.rev = j.updatedAt; ok = true; syncMsg(null); }
+      else if (r.status === 409){
+        this.busy = false;
+        await this.pull(true);
+        if (dlg.open) closeDlg();
+        render();
+        syncMsg('Il portafoglio era stato modificato da un altro browser: ho caricato la versione più recente. Se manca la tua ultima modifica, ripetila.');
+        return;
+      }
+      else { this.dirty = true; syncMsg('Sincronizzazione non riuscita (' + (j.error || 'errore ' + r.status) + '): le modifiche sono salvate in questo browser e riprovo alla prossima modifica.'); }
+    }catch(e){ this.dirty = true; syncMsg('Sincronizzazione non riuscita (connessione assente): le modifiche sono salvate in questo browser e riprovo alla prossima modifica.'); }
+    finally{ this.busy = false; }
+    // Modifiche arrivate durante il salvataggio: si salvano subito dopo.
+    if (ok && this.dirty) this.push();
+  },
+  // Ricarica il portafoglio dal Gist se un altro browser l'ha cambiato. Con modifiche non ancora
+  // salvate non fa nulla, a meno di force (dopo un conflitto).
+  async pull(force){
+    if (this.mode !== 'remote' || this.needKey || (!force && (this.dirty || this.busy))) return false;
+    try{
+      const r = await fetch(SYNC_API, { headers:this.auth(), cache:'no-store' });
+      if (!r.ok) return false;
+      const d = await r.json();
+      if (!force && ((d.updatedAt || null) === this.rev || this.dirty || this.busy)) return false;
+      this.rev = d.updatedAt || null; this.dirty = false;
+      S.holdings = d.holdings || []; S.hist = d.hist || {}; S.bench = d.bench || null;
+      this.saveLocal();
+      return true;
+    }catch(e){ return false; }
   },
   col(){ return this.db.collection('data/users/' + this.uid); },
   start(onData){
@@ -451,6 +511,21 @@ const store = {
         if (snap.metadata && snap.metadata.hasPendingWrites) return;
         onData('bench', snap.exists ? clone(snap.data()) : null);
       }, () => {});
+      return;
+    }
+    if (this.mode === 'remote'){
+      if (this.needKey) return onData('locked');
+      let d = this.remote; this.rev = d.updatedAt || null;
+      // Gist ancora vuoto: si parte dai dati già presenti in questo browser e si caricano nel Gist.
+      if (!this.rev && !(d.holdings && d.holdings.length)){
+        try{ const l = JSON.parse(localStorage.getItem('portafoglio-v2')); if (l && Array.isArray(l.holdings) && l.holdings.length){ d = l; this.dirty = true; } }catch(e){}
+      }
+      S.hist = d.hist || {};
+      this.synced = true;
+      onData('bench', d.bench || null);
+      onData('portfolio', d.holdings || []);
+      this.saveLocal();
+      if (this.dirty) this.push();
       return;
     }
     this.startLocal(onData);
@@ -474,6 +549,7 @@ const store = {
   },
   async savePortfolio(){
     if (!this.synced) return false;
+    if (this.mode === 'remote') return this.queue();
     if (this.mode === 'db'){
       try{ await this.col().doc('portfolio').set(clone({ version:2, holdings:S.holdings, updatedAt:new Date().toISOString() })); return true; }
       catch(e){ showErr('Salvataggio non riuscito: ' + (e && (e.message || e.code) || 'errore')); return false; }
@@ -481,6 +557,7 @@ const store = {
     return this.saveLocal();
   },
   async saveBench(){
+    if (this.mode === 'remote') return this.queue();
     if (this.mode === 'db'){
       try{ await this.col().doc('benchmarks').set(clone(S.bench || {items:[]})); return true; }
       catch(e){ showErr('Salvataggio non riuscito: ' + (e && (e.message || e.code) || 'errore')); return false; }
@@ -490,6 +567,7 @@ const store = {
   // Salva lo storico unendolo a quello sul server: un prezzo già salvato (anche da un'altra
   // finestra o da Claude) non viene mai perso; per la stessa data vince il prezzo appena inserito.
   async saveHist(id, force){
+    if (this.mode === 'remote') return this.queue();
     if (this.mode === 'db'){
       this.pending.add(id);
       try{
@@ -516,6 +594,8 @@ const store = {
   }
 };
 function showErr(msg){ const b = document.getElementById('saveErr'); if (b){ b.textContent = msg; b.hidden = false; } }
+// Messaggio sullo stato della sincronizzazione: resta visibile anche dopo un nuovo render.
+function syncMsg(msg){ store.syncErr = msg; const b = document.getElementById('saveErr'); if (b){ b.textContent = msg || ''; b.hidden = !msg; } }
 
 /* ---------- calcoli ---------- */
 const isComplete = h => h.qty > 0 && h.pmc > 0 && h.price > 0;
@@ -953,7 +1033,7 @@ function render(){
   const incomplete = S.holdings.filter(h => !isComplete(h));
   const noData = S.holdings.filter(h => !ok(calc(h, S.range).varPer));
 
-  let html = `<p class="banner" id="saveErr" hidden></p>`;
+  let html = `<p class="banner" id="saveErr" ${store.syncErr ? '' : 'hidden'}>${esc(store.syncErr || '')}</p>`;
   if (S.range === '1G'){
     const ltd = lastTradingDay();
     const stale = S.holdings.filter(h => isComplete(h) && (!h.priceDate || h.priceDate < ltd));
@@ -1135,7 +1215,7 @@ function couponsBlock(items){
 function footer(){
   const src = [];
   if (S.bench && S.bench.asOf) src.push(`Indici di riferimento al ${fDate(S.bench.asOf)} (${esc(S.bench.source || 'fonte esterna')}).`);
-  return `<p class="foot">${store.mode === 'db' ? 'I dati sono salvati nel tuo account, visibili solo a te.' : 'I dati sono salvati solo in questo browser: esporta un backup ogni tanto.'}
+  return `<p class="foot">${store.mode === 'db' ? 'I dati sono salvati nel tuo account, visibili solo a te.' : store.mode === 'remote' ? 'I dati sono salvati nel Gist privato su GitHub e sono gli stessi su tutti i browser.' : 'I dati sono salvati solo in questo browser: esporta un backup ogni tanto.'}
    ${src.join(' ')} Il netto stimato applica il 26 % (12,5 % ai titoli di Stato) alle sole plusvalenze, senza compensare le minusvalenze: è un ordine di grandezza, non un calcolo fiscale. Su 1 giorno l'asterisco indica che l'ultimo prezzo non è di oggi. Negli altri periodi indica che la variazione è calcolata dal prezzo disponibile più vicino all'inizio del periodo (la data esatta è nella scheda del titolo). Il valore dei BTP include il rateo di interessi maturato, come nell'app della banca.</p>`;
 }
 function rowHTML(h, c){
@@ -1768,6 +1848,21 @@ async function doRestore(btn){
   for (const id of new Set([...old, ...S.holdings.map(h => h.id)])) await store.saveHist(id);
   closeDlg(); render();
 }
+function lockScreen(){
+  app.innerHTML = `<div class="empty"><h2>Portafoglio protetto</h2><p>Inserisci la password del portafoglio (la variabile PORTFOLIO_PASSWORD su Vercel). Te la chiedo una sola volta su questo browser.</p>
+    <div class="form" style="max-width:320px;margin:14px auto 0;grid-template-columns:1fr"><label class="f">Password<input id="kPw" type="password" autocomplete="current-password"></label></div>
+    <p class="err" id="kErr"></p><div class="actions" style="justify-content:center"><button class="btn primary" data-act="unlock">Apri</button></div></div>`;
+  $('#kPw').focus();
+}
+async function unlock(){
+  const k = $('#kPw').value; if (!k){ $('#kErr').textContent = 'Inserisci la password.'; return; }
+  try{
+    const r = await fetch(SYNC_API, { headers:{ Authorization:'Bearer ' + k }, cache:'no-store' });
+    if (r.status === 401){ $('#kErr').textContent = 'Password errata.'; return; }
+  }catch(e){ $('#kErr').textContent = 'Connessione assente.'; return; }
+  try{ localStorage.setItem('pf-key', k); }catch(e){}
+  location.reload();
+}
 function arm(btn, label){
   if (btn.classList.contains('armed')) return true;
   btn.classList.add('armed'); const o = btn.textContent; btn.textContent = label;
@@ -1780,6 +1875,7 @@ document.addEventListener('click', async e => {
   const t = e.target.closest('button, a');
   if (!t){ if (!e.target.closest('#menu')) closeMenu(); return; }
   if (t.id !== 'btnMenu' && !t.closest('.menu-pop')) closeMenu();
+  if (store.needKey && t.dataset.act !== 'unlock') return;
   if (t.dataset.inccat){ S.incCat = t.dataset.inccat; render(); return; }
   if (t.dataset.pfcat){ S.pfCat = t.dataset.pfcat; render(); const c = $('#pfChart'); if (c) c.closest('.card').scrollIntoView({ block:'nearest' }); return; }
   if (t.dataset.range){ S.range = t.dataset.range; S.dRange = null; try{ localStorage.setItem('pf-range', S.range); }catch(_){} render(); return; }
@@ -1838,22 +1934,27 @@ document.addEventListener('click', async e => {
       return;
     }
     case 'doRestore': return doRestore(t);
+    case 'unlock': return unlock();
   }
 });
 function closeMenu(){ const m = $('#menu'); if (m.classList.contains('open')){ m.classList.remove('open'); $('#btnMenu').setAttribute('aria-expanded', 'false'); } }
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && dlg.open && e.target.matches('input:not([type=file]):not([type=checkbox])')){
-    const b = dlg.querySelector('[data-act="savePrice"],[data-act="saveEdit"],[data-act="saveBulk"],[data-act="savePerf"],[data-act="saveBench"]'); if (b){ e.preventDefault(); b.click(); }
+    const b = dlg.querySelector('[data-act="savePrice"],[data-act="saveEdit"],[data-act="saveBulk"],[data-act="savePerf"],[data-act="saveBench"],[data-act="saveTx"]'); if (b){ e.preventDefault(); b.click(); }
   }
+  if (e.key === 'Enter' && e.target.id === 'kPw'){ e.preventDefault(); unlock(); }
   if (e.key === 'Escape') closeMenu();
 });
 
 async function refreshHist(){
+  if (store.mode === 'remote' && S.loaded){ if (await store.pull() && !dlg.open) render(); return; }
   if (store.mode !== 'db' || !S.loaded) return;
   await store.loadHist(S.holdings);
   if (!dlg.open) render();
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshHist(); });
+// Avvisa prima di chiudere la pagina se una modifica non è ancora arrivata al Gist.
+window.addEventListener('beforeunload', e => { if (store.mode === 'remote' && (store.dirty || store.busy)){ store.push(); e.preventDefault(); e.returnValue = ''; } });
 
 /* ---------- tema chiaro / scuro ---------- */
 function applyTheme(t){
@@ -1875,6 +1976,7 @@ renderRanges();
 (async () => {
   await store.init();
   store.start((kind, data) => {
+    if (kind === 'locked') return lockScreen();
     if (kind === 'portfolio'){ S.holdings = data; S.loaded = true; }
     else S.bench = data;
     if (S.loaded && !dlg.open) render();

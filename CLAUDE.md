@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 C'è anche una funzione serverless Vercel, `api/quote.js` (CommonJS, Node 18+, nessuna dipendenza): `GET /api/quote?q=<ISIN o ticker>[&symbol=][&from=YYYY-MM-DD|&range=]` restituisce `{source, symbol, name, currency, price, date, history:[[dataISO, chiusura]]}`. Per un ISIN la fonte principale è justETF (ETF, ETC e azioni, in euro; `symbol` è l'ISIN). Yahoo Finance è solo una riserva perché dai server di Vercel risponde spesso 429: l'ISIN si traduce in ticker con OpenFIGI (preferisce Borsa Italiana, poi altre borse in euro; chiave facoltativa in `OPENFIGI_API_KEY`). Entrambe sono API non ufficiali. Risponde 404 se il titolo non c'è (tipico di certificati e BTP).
 
+`api/portfolio.js` salva il portafoglio in un Gist privato (file `portfolio.json`, stesso formato di "Esporta backup"): `GET` lo legge, `PUT {holdings, hist, bench, base}` lo scrive solo se `base` è uguale all'`updatedAt` attuale, altrimenti 409. Variabili d'ambiente: `GITHUB_TOKEN` (permesso Gist), `GIST_ID`, `PORTFOLIO_PASSWORD` facoltativa (header `Authorization: Bearer`). Senza `GITHUB_TOKEN`/`GIST_ID` risponde 501 e l'app resta in locale.
+
 - **Avvio:** apri `index.html` nel browser, senza server. I prezzi automatici funzionano solo quando l'app è servita da Vercel (`vercel dev` in locale); da file o come Artifact si usa l'inserimento manuale.
 - **Verifica:** a mano nel browser, nel tema chiaro e in quello scuro e a larghezza da telefono.
 
@@ -35,9 +37,10 @@ Le sezioni sono separate da commenti `/* ---------- nome ---------- */`, in ques
 - **Categorie:** `CATS` definisce colore, aliquota fiscale di default (26%, 12,5% per i TS) e tipo di quotazione. Una categoria sconosciuta ricade su `ALTRO`.
 - Le date sono stringhe ISO `YYYY-MM-DD`, gestite con `addISO`/`toISO` (mezzogiorno locale per evitare problemi di fuso). I numeri si formattano con `Intl` `it-IT` (`eur`, `pct`, `px`…). `parseNum`/`parseDate` accettano input sia in formato italiano sia inglese.
 
-## Archiviazione (`store`): due modalità
+## Archiviazione (`store`): tre modalità
 
 - **`db`:** si attiva se esistono `window.claude.use('db'|'user'|'downloads')`, cioè quando la pagina gira come Artifact claude.ai con capability. I documenti stanno in `data/users/<uid>/`: `portfolio` (`{version:2, holdings, updatedAt}`), `benchmarks` e `hist-<id>` (`{points}`). Il portafoglio arriva da `onSnapshot`.
+- **`remote`:** si attiva quando `GET /api/portfolio` risponde 200 (app su Vercel con il Gist configurato). Tutti i `save*` passano da `queue()`: copia in `localStorage` e dopo 800 ms un solo `push()` con l'intero stato e `base: store.rev`. Con 409 `pull(true)` ricarica il Gist (la modifica locale si perde e lo si dice con `syncMsg`). `refreshHist` (anche al ritorno sulla pagina) fa `pull()`, che non fa nulla se ci sono modifiche non ancora salvate. Con il Gist vuoto il primo avvio carica i dati già presenti in `localStorage`. Con 401 l'app mostra `lockScreen()` e salva la password in `localStorage` (`pf-key`).
 - **`local`:** fallback su `localStorage` con chiave `portafoglio-v2` (`{holdings, hist, bench}`). Lo stesso `localStorage` conserva anche `pf-range` e `pf-theme`.
 
 Invarianti da non rompere:
