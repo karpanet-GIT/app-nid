@@ -2,12 +2,15 @@
 //
 // GET /api/quote?q=<ISIN o ticker>[&symbol=<ticker Yahoo>][&from=YYYY-MM-DD | &range=1mo]
 //
-// - q: ISIN (es. IE00B4L5Y983) o ticker Yahoo (es. SWDA.MI). Per un ISIN la fonte principale è
-//   justETF (ETF, ETC e azioni, prezzi in euro). Se justETF non lo trova si passa a Yahoo
-//   Finance: l'ISIN si traduce in ticker con OpenFIGI, preferendo Borsa Italiana e poi le altre
-//   borse in euro, e se non basta con la ricerca di Yahoo. Yahoo limita spesso le richieste
-//   dai server (errore 429), quindi resta solo una riserva.
-// - symbol: ticker Yahoo già noto (lo restituisce una chiamata precedente); salta la ricerca.
+// - q: ISIN (es. IE00B4L5Y983) o ticker Yahoo (es. SWDA.MI). Per un ISIN le fonti sono, in ordine:
+//   1. justETF: ETF, ETC e azioni, prezzi in euro;
+//   2. Borsa Italiana: BTP e obbligazioni del MOT (storico giornaliero dal servizio dei grafici)
+//      e certificati del SeDeX (solo il prezzo di riferimento, letto dalla pagina pubblica);
+//   3. Yahoo Finance: l'ISIN si traduce in ticker con OpenFIGI, preferendo Borsa Italiana e poi
+//      le altre borse in euro, e se non basta con la ricerca di Yahoo. Yahoo limita spesso le
+//      richieste dai server (errore 429), quindi resta solo una riserva.
+// - symbol: ticker già noto (lo restituisce una chiamata precedente); salta la ricerca.
+//   ISIN.MOT e ISIN-SEDX indicano Borsa Italiana.
 // - from: data ISO da cui partire con lo storico; in alternativa range (default 1mo).
 //
 // Risposta 200: { query, source, symbol, name, exchange, currency, price, date, history:[[dataISO, chiusura], ...] }
@@ -78,6 +81,63 @@ async function figi(isin){
   return out;
 }
 
+// Borsa Italiana: BTP e obbligazioni del MOT dal servizio che alimenta i grafici del sito.
+// Ogni riga è [timestamp ms, chiusura, apertura, massimo, minimo, ultimo, volume].
+const BI_TF = [[31, '1m'], [92, '3m'], [183, '6m'], [366, '1y'], [1100, '3y'], [Infinity, '5y']];
+async function biChart(key, timeFrame, sample){
+  let r;
+  try{
+    r = await fetch('https://charts.borsaitaliana.it/charts/services/ChartWService.asmx/GetPricesWithVolume', {
+      method: 'POST',
+      headers: { 'User-Agent': UA, 'Content-Type': 'application/json; charset=UTF-8', 'Accept': 'application/json' },
+      body: JSON.stringify({ request: { SampleTime: sample, TimeFrame: timeFrame, RequestedDataSetType: 'ohlc', ChartPriceType: 'price', Key: key,
+        OffSet: 0, FromDate: null, ToDate: null, UseDelay: true, KeyType: 'Topic', KeyType2: 'Topic', Language: 'it-IT' } }),
+      signal: AbortSignal.timeout(8000)
+    });
+  }catch(e){ throw new HttpError(502, 'Borsa Italiana non raggiungibile'); }
+  if (!r.ok) throw new HttpError(502, 'Borsa Italiana: errore ' + r.status);
+  const j = await r.json().catch(() => null);
+  return (j && Array.isArray(j.d) ? j.d : []).filter(x => Array.isArray(x) && x[1] > 0);
+}
+async function biMot(isin, from, range){
+  const key = isin + '.MOT';
+  const start = from || new Date(Date.now() - RANGE_DAYS[range] * 864e5).toISOString().slice(0, 10);
+  const days = (Date.now() - Date.parse(start)) / 864e5;
+  const daily = await biChart(key, BI_TF.find(t => days <= t[0])[1], '1d');
+  if (!daily.length) return null;
+  const map = new Map();
+  for (const x of daily){ const d = new Date(x[0]).toISOString().slice(0, 10); if (d >= start) map.set(d, x[1]); }
+  // La barra giornaliera di oggi arriva solo il giorno dopo: il prezzo di oggi è l'ultimo dell'intraday.
+  const intra = await biChart(key, '1d', '1mm').catch(() => []);
+  const last = intra[intra.length - 1];
+  if (last){ const d = new Date(last[0]).toISOString().slice(0, 10); const top = [...map.keys()].pop(); if (!top || d >= top) map.set(d, last[1]); }
+  const history = [...map.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1);
+  if (!history.length) return null;
+  const [date, price] = history[history.length - 1];
+  return { source: 'borsaitaliana', symbol: key, name: null, exchange: 'Borsa Italiana MOT', currency: 'EUR', price, date, history };
+}
+// Certificati del SeDeX: il servizio dei grafici non li copre, quindi si legge il prezzo di
+// riferimento dalla pagina pubblica del titolo (nessuno storico: si costruisce un giorno alla volta).
+async function biSedex(isin){
+  let r;
+  try{ r = await fetch(`https://www.borsaitaliana.it/borsa/cw-e-certificates/scheda/${isin}.html?lang=it`, { headers: { 'User-Agent': UA, 'Accept': 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(8000) }); }
+  catch(e){ throw new HttpError(502, 'Borsa Italiana non raggiungibile'); }
+  if (r.status === 404 || !/-SEDX\.html/.test(r.url)) return null;
+  if (!r.ok) throw new HttpError(502, 'Borsa Italiana: errore ' + r.status);
+  const text = (await r.text()).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, '\n');
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const after = label => { const i = lines.findIndex(l => l.startsWith(label)); return i < 0 ? null : (lines[i].slice(label.length).trim() || lines[i + 1] || null); };
+  const num = v => v ? Number(v.replace(/\./g, '').replace(',', '.')) : NaN;
+  const ref = num(after('Prezzo di riferimento'));
+  const m = (after('Ultimo Contratto:') || '').match(/(\d{2})\/(\d{2})\/(\d{2})/);
+  if (!(ref > 0) || !m) return null;
+  const date = `20${m[3]}-${m[2]}-${m[1]}`;
+  return { source: 'borsaitaliana', symbol: isin + '-SEDX', name: null, exchange: 'Borsa Italiana SeDeX', currency: 'EUR', price: ref, date, history: [[date, ref]] };
+}
+async function borsaItaliana(isin, from, range){
+  return (await biMot(isin, from, range)) || (await biSedex(isin));
+}
+
 async function search(q){
   const j = await yahoo('https://query2.finance.yahoo.com/v1/finance/search?quotesCount=10&newsCount=0&listsCount=0&q=' + encodeURIComponent(q));
   const quotes = (j && j.quotes || []).filter(x => x.symbol && x.quoteType !== 'OPTION' && x.quoteType !== 'FUTURE');
@@ -113,9 +173,15 @@ async function chart(symbol, from, range){
 
 async function quote(q, symbol, from, range){
   const isin = ISIN.test(q);
-  // Se justETF non risponde si prova comunque Yahoo; l'errore conta solo se anche Yahoo fallisce.
+  // Titolo già trovato su Borsa Italiana: si va direttamente lì.
+  if (isin && /^[A-Z0-9]{12}(\.MOT|-SEDX)$/.test(symbol)){
+    const c = symbol.endsWith('.MOT') ? await biMot(q, from, range) : await biSedex(q);
+    if (c) return c;
+  }
+  // Se una fonte non risponde si prova la successiva; l'errore conta solo se falliscono tutte.
   if (isin){ try{ const c = await justetf(q, from, range); if (c) return c; }catch(e){} }
-  if (symbol && symbol !== q){ const c = await chart(symbol, from, range); if (c) return c; }
+  if (isin){ try{ const c = await borsaItaliana(q, from, range); if (c) return c; }catch(e){} }
+  if (symbol && symbol !== q && !/(\.MOT|-SEDX)$/.test(symbol)){ const c = await chart(symbol, from, range); if (c) return c; }
   if (!isin){ const c = await chart(q, from, range); if (c) return c; }
   // Preferisci una quotazione in euro: prova al massimo tre ticker per fonte.
   let first = null;
