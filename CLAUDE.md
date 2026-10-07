@@ -27,6 +27,7 @@ Le sezioni sono separate da commenti `/* ---------- nome ---------- */`, in ques
 - **Holding:** `{id, name, isin, cat, quote, qty, pmc, price, priceDate, buyDate, tax, perf?, bank?, income?, feed?}`.
   - `quote: 'pct'` vuol dire prezzo in % del nominale (TS/OBB), quindi il controvalore è `qty/100 * price`. Usa sempre `factor(h)`.
   - Un titolo è "completo" (`isComplete`) se ha `qty`, `pmc` e `price` > 0. I titoli incompleti usano `bank.value/bank.cost` e i rendimenti `perf.r[periodo]` inseriti a mano.
+  - `tx[]`: movimenti `{id, date, qty (+ acquisto / − vendita), price, kind: 'iniziale'|'acquisto'|'vendita'}`. Se esiste, `qty`, `pmc` (media ponderata), `buyDate` e `realized` (plus/minusvalenza delle vendite) si ricalcolano con `recomputeTx`; `ensureTx` crea il movimento iniziale dalla posizione esistente. `qtyAt(h, data)` dà le quote possedute a una data (usata per le cedole) e `txPeriod` corregge la variazione di periodo per i movimenti avvenuti nel periodo.
   - `feed: {symbol}` è il ticker trovato da `/api/quote`. Si salva solo dopo che il prezzo trovato torna con quello del titolo (`checkQuote`); da allora gli aggiornamenti scaricano solo gli ultimi giorni invece di 5 anni.
   - `income` è una cedola obbligazionaria (`kind:'bond'`) o un certificato (`kind:'cert'`, con barriere, memoria, `worst`, `missed`).
 - **Storico:** `S.hist[id]` è un array di `[dataISO, prezzo]` ordinato per data. Le funzioni di ricerca (`priceAt` usa la ricerca binaria) contano su quest'ordine.

@@ -1,0 +1,4 @@
+# Backup del portafoglio: contengono dati personali, il repository è pubblico
+backup*.json
+portafoglio*.json
+.DS_Store

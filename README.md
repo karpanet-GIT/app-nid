@@ -5,6 +5,7 @@ App web in un unico file (`index.html`) per seguire un portafoglio di titoli: ET
 ## Cosa fa
 
 - Valore del portafoglio e guadagno rispetto al prezzo di carico
+- Acquisti e vendite di quote con data e prezzo: prezzo medio di carico ricalcolato, guadagno realizzato sulle vendite, cedole contate solo sulle quote possedute a ogni data
 - Grafici dell'andamento del portafoglio e dei singoli titoli, con filtro per periodo e per comparto
 - Mappa dei titoli (dimensione per valore, colore per variazione)
 - Confronto con indici di riferimento

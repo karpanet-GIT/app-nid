@@ -584,8 +584,52 @@ function calc(h, r){
   const acc = accruedInt(h);
   const f = factor(h), value = f * h.price + acc, cost = f * h.pmc;
   const base = periodBase(h, r);
-  return { value, cost, acc, plTot:value - cost, varTot:value / cost - 1, base,
-           plPer: base ? f * (h.price - base.price) : null, varPer: base ? h.price / base.price - 1 : null };
+  let plPer = base ? f * (h.price - base.price) : null, varPer = base ? h.price / base.price - 1 : null;
+  if (h.tx && r !== 'CARICO'){
+    const tp = txPeriod(h, r, base && base.kind !== 'pmc' ? base : (base && base.kind === 'pmc' ? null : base), f);
+    if (tp){ plPer = tp.plPer; varPer = tp.varPer; }
+  }
+  return { value, cost, acc, plTot:value - cost, varTot:value / cost - 1, base, plPer, varPer, realized: h.realized || 0 };
+}
+/* ---------- movimenti (acquisti e vendite di quote) ---------- */
+const fq = (h, q) => h.quote === 'pct' ? q / 100 : q;
+function qtyAt(h, iso){
+  if (!h.tx) return h.buyDate && iso < h.buyDate ? 0 : h.qty;
+  return h.tx.reduce((a, t) => a + ((!t.date || t.date <= iso) ? t.qty : 0), 0);
+}
+function ensureTx(h){
+  if (h.tx) return;
+  h.tx = [{ id: uid(), date: h.buyDate || null, qty: h.qty, price: h.pmc, kind: 'iniziale' }];
+}
+function recomputeTx(h){
+  const list = h.tx.slice().sort((a, b) => (a.date || '') < (b.date || '') ? -1 : (a.date || '') > (b.date || '') ? 1 : 0);
+  let qty = 0, pmc = 0, realized = 0;
+  for (const t of list){
+    if (t.qty > 0){ pmc = (qty * pmc + t.qty * t.price) / (qty + t.qty); qty += t.qty; }
+    else { if (qty + t.qty < -1e-9) return 'Le vendite superano le quote possedute a quella data.'; realized += fq(h, -t.qty) * (t.price - pmc); qty += t.qty; }
+  }
+  if (!(qty > 1e-9)) return 'Dopo i movimenti non resterebbero quote: per chiudere la posizione usa “Elimina titolo”.';
+  const oldQty = h.qty;
+  h.tx = list; h.qty = round(qty); h.pmc = round(pmc); h.realized = Math.round(realized * 100) / 100;
+  const dated = list.filter(t => t.date && t.qty > 0).map(t => t.date).sort();
+  h.buyDate = list.some(t => !t.date) ? (h.buyDate && dated.length && h.buyDate < dated[0] ? h.buyDate : null) : (dated[0] || h.buyDate || null);
+  if (h.income && h.income.nominal > 0 && oldQty > 0 && h.quote !== 'pct') h.income.nominal = Math.round(h.income.nominal * h.qty / oldQty * 100) / 100;
+  return null;
+}
+function txPeriod(h, r, base, f){
+  // variazione nel periodo considerando acquisti e vendite fatti nel periodo
+  const start = r === '1G' ? (base && base.date) : rangeStart(r);
+  if (!start) return null;
+  const qS = qtyAt(h, start);
+  const flows = h.tx.filter(t => t.date && t.date > start);
+  if (!flows.length) return null;
+  let startVal;
+  if (qS <= 1e-9) startVal = 0; else if (base) startVal = fq(h, qS) * base.price; else return { plPer:null, varPer:null };
+  const inflow = flows.filter(t => t.qty > 0).reduce((a, t) => a + fq(h, t.qty) * t.price, 0);
+  const outflow = flows.filter(t => t.qty < 0).reduce((a, t) => a + fq(h, -t.qty) * t.price, 0);
+  const plPer = f * h.price - startVal - inflow + outflow;
+  const den = startVal + inflow;
+  return { plPer, varPer: den ? plPer / den : null };
 }
 function taxRate(h){ return ok(h.tax) ? h.tax : (CAT[h.cat] || CAT.ALTRO).tax; }
 function totals(r){
@@ -1050,9 +1094,12 @@ function couponsIn(h, r){
   const to = todayISO();
   const dates = couponDates(inc, addISO(from, {days:1}), to);
   const missed = new Set(inc.missed || []);
-  const paid = dates.filter(d => !missed.has(d));
+  const share = d => h.qty > 0 ? qtyAt(h, addISO(d, {days:-1})) / h.qty : 1;
+  const held = dates.filter(d => share(d) > 1e-9);
+  const paid = held.filter(d => !missed.has(d));
+  const gross = paid.reduce((a, d) => a + per * share(d), 0);
   const tax = taxRate(h) / 100;
-  return { state:'ok', from, dates, paid, per, gross: per * paid.length, net: per * paid.length * (1 - tax), annual: per * inc.freq, skipped: dates.length - paid.length };
+  return { state:'ok', from, dates: held, paid, per, gross, net: gross * (1 - tax), annual: per * inc.freq, skipped: held.length - paid.length };
 }
 function couponsBlock(items){
   const r = S.range, rl = RLABEL[r];
@@ -1230,7 +1277,7 @@ function detail(id, panel){
       <div class="d-stats">
         <div><div class="k">Valore</div><div class="v">${eur(c.value)}</div>${done ? `<div class="s flat">${nf(Number.isInteger(h.qty)?0:2).format(h.qty)} × ${px(h.price)}${h.quote === 'pct' ? ' %' : ''}${c.acc ? `, rateo ${eur(c.acc)}` : ''}</div>` : ''}</div>
         <div><div class="k">Carico</div><div class="v">${eur(c.cost)}</div>${done ? `<div class="s flat">PMC ${px(h.pmc)}</div>` : ''}</div>
-        <div><div class="k">Dal carico</div><div class="v ${cls(c.plTot)}">${eurS(c.plTot)}</div><div class="s ${cls(c.varTot)}">${pct(c.varTot)}</div></div>
+        <div><div class="k">Dal carico</div><div class="v ${cls(c.plTot)}">${eurS(c.plTot)}</div><div class="s ${cls(c.varTot)}">${pct(c.varTot)}${c.realized ? ` <span class="partial">realizzato ${eurS(c.realized)}</span>` : ''}</div></div>
         <div><div class="k">${r === 'CARICO' ? 'Netto stimato' : esc(RLABEL[r])}</div>${r === 'CARICO'
           ? `<div class="v ${cls(c.plTot)}">${eurS(ok(c.plTot) ? (c.plTot > 0 ? c.plTot * (1 - taxRate(h)/100) : c.plTot) : null)}</div><div class="s flat">aliquota ${nf(1).format(taxRate(h))} %</div>`
           : `<div class="v ${cls(c.plPer)}">${eurS(c.plPer)}</div><div class="s ${cls(c.varPer)}">${pct(c.varPer)}${c.base && c.base.date ? ` <span class="partial">dal ${fDateS(c.base.date)}</span>` : ''}</div>`}</div>
@@ -1241,16 +1288,17 @@ function detail(id, panel){
         <p class="note">Linea tratteggiata: il tuo prezzo medio di carico. Storico dal ${fDate(H[0][0])} al ${fDate(H[H.length-1][0])}, ${nf(0).format(H.length)} prezzi.</p>` : ''}
       ${(!done || H.length < 10) && h.perf ? `<div class="chart" id="dPerf"></div><p class="note">Andamento nel periodo scelto, ricostruito dai rendimenti per periodo (100 = inizio periodo; con “Dal carico” mostra 5 anni): indica la tendenza, non le oscillazioni giornaliere. Per il grafico giornaliero importa lo storico prezzi.</p>` : ''}
       ${h.perf || (S.bench && S.bench.items && S.bench.items.length) ? `${perfTable(h)}<p class="note" style="margin-top:-6px">${perfNote}</p>` : ''}
-      ${!done ? `<div class="bankbox" style="margin-bottom:14px">Titolo importato dalla schermata della banca senza quantità. Inserisci la quantità posseduta: prezzo attuale e di carico li ricavo dai valori della banca.</div>` : (H.length < 10 && !h.perf ? `<p class="note">Ancora nessuno storico prezzi: importalo da un CSV oppure aggiorna il prezzo ogni giorno, e qui comparirà il grafico.</p>` : '')}
+      ${!done ? `<div class="bankbox" style="margin-bottom:14px">Titolo importato dalla schermata della banca senza quantità. Inserisci la quantità posseduta: prezzo attuale e di carico li ricavo dai valori della banca.</div>` : (H.length < 3 && !h.perf ? `<p class="note">Ancora nessuno storico prezzi: importalo da un CSV oppure aggiorna il prezzo ogni giorno, e qui comparirà il grafico.</p>` : '')}
       <div class="actions">
         <button class="btn ${done ? '' : 'primary'}" data-act="edit">${done ? 'Modifica' : 'Inserisci la quantità'}</button>
-        ${done ? `<button class="btn" data-act="panel" data-p="price">Aggiorna prezzo</button><button class="btn" data-act="panel" data-p="import">Importa storico</button>` : ''}
+        ${done ? `<button class="btn primary" data-act="panel" data-p="buy">Aggiungi quote</button><button class="btn" data-act="panel" data-p="sell">Vendi quote</button><button class="btn" data-act="panel" data-p="price">Aggiorna prezzo</button><button class="btn" data-act="panel" data-p="import">Importa storico</button>` : ''}
         <button class="btn" data-act="panel" data-p="perf">Rendimenti per periodo</button>
         ${h.income && h.income.anchor ? '<button class="btn" data-act="panel" data-p="coupons">Cedole incassate</button>' : ''}
         ${h.isin && /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(h.isin) && (h.cat === 'ETF' || h.cat === 'ETC') ? `<a class="btn" href="https://www.justetf.com/it/etf-profile.html?isin=${encodeURIComponent(h.isin)}" target="_blank" rel="noopener">Scheda su justETF</a>` : ''}
         <button class="btn danger" data-act="delete">Elimina titolo</button>
       </div>
       <div id="dPanel"></div>
+      ${done && h.tx && h.tx.length > 1 ? txListHTML(h) : ''}
     </div>`);
   if (done && (H.length >= 10 || (!h.perf && H.length >= 3))){
     const pts = seriesFor(h, r);
@@ -1270,6 +1318,15 @@ function detail(id, panel){
     mountMulti(dp, series, { h:250, fmt:v => nf(0).format(v), aria:'Andamento di ' + h.name, refs:[{ v:100, label:'inizio periodo' }] });
   }
   if (panel) showPanel(panel);
+}
+function txListHTML(h){
+  const rows = h.tx.slice().reverse().map(t => `<tr><td>${t.date ? fDate(t.date) : 'prima del ' + (h.tx.find(x => x.date) ? fDate(h.tx.find(x => x.date).date) : 'primo movimento')}</td>
+    <td>${t.kind === 'iniziale' ? 'Posizione iniziale' : t.qty > 0 ? 'Acquisto' : 'Vendita'}</td>
+    <td class="${t.qty > 0 ? 'up' : 'down'}">${t.qty > 0 ? '+' : '−'}${nf(Number.isInteger(t.qty) ? 0 : 2).format(Math.abs(t.qty))}</td>
+    <td>${px(t.price)}</td><td>${eur(fq(h, Math.abs(t.qty)) * t.price)}</td>
+    <td>${t.kind === 'iniziale' ? '' : `<button class="btn small danger" data-act="delTx" data-tx="${t.id}">Annulla</button>`}</td></tr>`).join('');
+  return `<div class="panel"><h3>Movimenti</h3><div class="tscroll"><table class="cmp-table" style="min-width:520px;margin-top:4px"><tr><th>Data</th><th>Tipo</th><th>Quote</th><th>Prezzo</th><th>Controvalore</th><th></th></tr>${rows}</table></div>
+    <p class="note" style="margin:8px 0 0">Quantità e prezzo medio di carico sono calcolati da questi movimenti (media ponderata). Le cedole tengono conto delle quote possedute a ogni data di pagamento.</p></div>`;
 }
 function perfInputs(prefix, r){
   return `<div class="perfgrid">${PERF_KEYS.map(k => `<label class="f">${k}<input inputmode="decimal" data-${prefix}="${k}" value="${r && ok(r[k]) ? fmtIn(r[k], 2) : ''}"></label>`).join('')}</div>`;
@@ -1299,6 +1356,18 @@ function showPanel(p){
         ${H.length ? `<button class="btn danger" data-act="clearHist">Svuota storico</button>` : ''}</div>
       <p class="err" id="iErr"></p></div>`;
     $('#csvFile').addEventListener('change', async e => { const f = e.target.files[0]; if (f) $('#csv').value = await f.text(); });
+  } else if (p === 'buy' || p === 'sell'){
+    const sell = p === 'sell';
+    el.innerHTML = `<div class="panel"><h3>${sell ? 'Vendi quote' : 'Aggiungi quote'}</h3>
+      <p>${sell ? 'Le quote vendute escono dal calcolo dalla data indicata; la plusvalenza o minusvalenza viene registrata come realizzata.' : 'Le nuove quote entrano nel calcolo dalla data indicata, al prezzo pagato: il prezzo medio di carico si aggiorna e le cedole contano solo da quella data.'}${h.quote === 'pct' ? ' Per i titoli di Stato indica il valore nominale e il prezzo (es. 101,25).' : ''}</p>
+      <div class="form"><label class="f">Data${sell ? ' di vendita' : ' di acquisto'}<input id="tDate" type="date" max="${todayISO()}" value="${todayISO()}"></label>
+      <label class="f">${h.quote === 'pct' ? 'Valore nominale (€)' : 'Quote'}${sell ? ` <small>(possiedi ${nf(Number.isInteger(h.qty) ? 0 : 2).format(h.qty)})</small>` : ''}<input id="tQty" inputmode="decimal"></label>
+      <label class="f">Prezzo${sell ? ' di vendita' : ' di acquisto'}<input id="tPrice" inputmode="decimal" value="${fmtIn(h.price)}"></label>
+      <label class="f">Controvalore<input id="tTot" disabled></label></div>
+      <p class="err" id="tErr"></p><div class="actions"><button class="btn primary" data-act="saveTx" data-sell="${sell ? 1 : 0}">${sell ? 'Registra vendita' : 'Registra acquisto'}</button></div></div>`;
+    const upd = () => { const q = parseNum($('#tQty').value, true), pr = parseNum($('#tPrice').value); $('#tTot').value = q > 0 && pr > 0 ? eur(fq(h, q) * pr) : ''; };
+    $('#tQty').addEventListener('input', upd); $('#tPrice').addEventListener('input', upd);
+    $('#tQty').focus();
   } else if (p === 'coupons'){
     const inc = h.income || {};
     const from = h.buyDate || addISO(todayISO(), {years:-3});
@@ -1359,11 +1428,11 @@ function editForm(id){
       <label class="f">ISIN o ticker<input id="eIsin" value="${esc(h ? h.isin || '' : '')}" placeholder="IE00B4L5Y983" autocapitalize="characters"></label>
       <label class="f">Categoria<select id="eCat">${CATS.map(c => `<option value="${c.id}" ${c.id === cat ? 'selected' : ''}>${c.label}</option>`).join('')}</select></label>
       <label class="f">Come è quotato<select id="eQuote"><option value="unit" ${quote === 'unit' ? 'selected' : ''}>Prezzo per quota</option><option value="pct" ${quote === 'pct' ? 'selected' : ''}>% del nominale (BTP, obbligazioni)</option></select></label>
-      <label class="f"><span id="eQtyL">${quote === 'pct' ? 'Valore nominale (€)' : 'Quantità'}</span><input id="eQty" inputmode="decimal" value="${done ? fmtIn(h.qty, 4) : ''}"></label>
-      <label class="f">Prezzo medio di carico<input id="ePmc" inputmode="decimal" value="${done ? fmtIn(h.pmc) : ''}"></label>
+      <label class="f"><span id="eQtyL">${quote === 'pct' ? 'Valore nominale (€)' : 'Quantità'}</span><input id="eQty" inputmode="decimal" value="${done ? fmtIn(h.qty, 4) : ''}" ${h && h.tx ? 'readonly' : ''}>${h && h.tx ? '<span class="hint">Calcolata dai movimenti: usa Aggiungi o Vendi quote.</span>' : ''}</label>
+      <label class="f">Prezzo medio di carico<input id="ePmc" inputmode="decimal" value="${done ? fmtIn(h.pmc) : ''}" ${h && h.tx ? 'readonly' : ''}></label>
       <label class="f">Prezzo attuale<input id="ePrice" inputmode="decimal" value="${done ? fmtIn(h.price) : ''}"></label>
       <label class="f">Data del prezzo<input id="ePDate" type="date" value="${h && h.priceDate ? h.priceDate : todayISO()}"></label>
-      <label class="f">Primo acquisto (facoltativo)<input id="eBuy" type="date" value="${h && h.buyDate ? h.buyDate : ''}"><span class="hint">Se è dentro il periodo scelto, il confronto parte dal tuo carico.</span></label>
+      <label class="f">Primo acquisto (facoltativo)<input id="eBuy" type="date" value="${h && h.buyDate ? h.buyDate : ''}" ${h && h.tx && h.tx.some(t => t.date && t.kind !== 'iniziale') ? 'readonly' : ''}><span class="hint">Se è dentro il periodo scelto, il confronto parte dal tuo carico.</span></label>
       <label class="f">Aliquota sulle plusvalenze<select id="eTax"><option value="26" ${tax === 26 ? 'selected' : ''}>26 %</option><option value="12.5" ${tax === 12.5 ? 'selected' : ''}>12,5 % (titoli di Stato)</option></select></label>
       ${incomeFields(h, cat)}
     </div><p class="err" id="eErr"></p></div>
@@ -1428,11 +1497,14 @@ function saveEdit(){
   const priceDate = $('#ePDate').value || todayISO();
   const rec = Object.assign({ id: h ? h.id : uid(), qty, pmc: round(pmc), price: round(price), priceDate }, common);
   if (h){
-    const keep = { perf:h.perf, bank:h.bank, income:h.income };
+    // Il ticker trovato da /api/quote resta valido finché l'ISIN non cambia.
+    const keep = { perf:h.perf, bank:h.bank, income:h.income, tx:h.tx, realized:h.realized, feed: h.isin === common.isin ? h.feed : null };
     Object.keys(h).forEach(k => delete h[k]);
     Object.assign(h, rec);
     if (keep.perf) h.perf = keep.perf;
     if (keep.bank) h.bank = keep.bank;
+    if (keep.feed) h.feed = keep.feed;
+    if (keep.tx){ h.tx = keep.tx; h.realized = keep.realized; const ini = h.tx.find(t => t.kind === 'iniziale'); if (ini && !h.tx.some(t => t.date && t.kind !== 'iniziale')) ini.date = h.buyDate || null; recomputeTx(h); }
     if (income === undefined && keep.income) h.income = keep.income;
     if (income === null) delete h.income;
   } else { if (income === null) delete rec.income; S.holdings.push(rec); }
@@ -1457,6 +1529,27 @@ function savePrice(){
   if (!h.priceDate || d >= h.priceDate){ h.price = p; h.priceDate = d; }
   store.savePortfolio(); store.saveHist(h.id);
   render(); detail(h.id);
+}
+function saveTx(sell){
+  const h = S.holdings.find(x => x.id === S.openId); if (!h) return;
+  const err = m => { $('#tErr').textContent = m; };
+  const d = $('#tDate').value || todayISO();
+  if (d > todayISO()) return err('La data non può essere nel futuro.');
+  const q = parseNum($('#tQty').value, true), pr = parseNum($('#tPrice').value);
+  if (!(q > 0)) return err('Inserisci il numero di quote.');
+  if (!(pr > 0)) return err('Inserisci il prezzo.');
+  const snapshot = { tx: h.tx ? clone(h.tx) : null, qty:h.qty, pmc:h.pmc, buyDate:h.buyDate, realized:h.realized, nom: h.income && h.income.nominal };
+  ensureTx(h);
+  if (sell && q > qtyAt(h, d) + 1e-9) { if (!snapshot.tx) delete h.tx; return err(`Al ${fDate(d)} possiedi ${nf(2).format(qtyAt(h, d))} quote: non puoi venderne di più.`); }
+  h.tx.push({ id: uid(), date: d, qty: sell ? -q : q, price: pr, kind: sell ? 'vendita' : 'acquisto' });
+  const e = recomputeTx(h);
+  if (e){
+    if (snapshot.tx) h.tx = snapshot.tx; else delete h.tx;
+    Object.assign(h, { qty:snapshot.qty, pmc:snapshot.pmc, buyDate:snapshot.buyDate, realized:snapshot.realized });
+    if (h.income && snapshot.nom) h.income.nominal = snapshot.nom;
+    return err(e);
+  }
+  store.savePortfolio(); render(); detail(h.id);
 }
 function savePerf(){
   const h = S.holdings.find(x => x.id === S.openId); if (!h) return;
@@ -1706,6 +1799,15 @@ document.addEventListener('click', async e => {
     case 'saveEdit': return saveEdit();
     case 'savePrice': return savePrice();
     case 'savePerf': return savePerf();
+    case 'saveTx': return saveTx(t.dataset.sell === '1');
+    case 'delTx': {
+      const h = S.holdings.find(x => x.id === S.openId); if (!h || !h.tx || !arm(t, 'Conferma')) return;
+      const keep = clone(h.tx), keepQ = { qty:h.qty, pmc:h.pmc, buyDate:h.buyDate, realized:h.realized, nom: h.income && h.income.nominal };
+      h.tx = h.tx.filter(x => x.id !== t.dataset.tx);
+      const e = recomputeTx(h);
+      if (e){ h.tx = keep; Object.assign(h, { qty:keepQ.qty, pmc:keepQ.pmc, buyDate:keepQ.buyDate, realized:keepQ.realized }); if (h.income && keepQ.nom) h.income.nominal = keepQ.nom; showErr(e); return; }
+      store.savePortfolio(); render(); return detail(h.id);
+    }
     case 'saveCoupons': {
       const h = S.holdings.find(x => x.id === S.openId); if (!h || !h.income) return;
       const missed = [...document.querySelectorAll('[data-cpd]')].filter(i => !i.checked).map(i => i.dataset.cpd);
