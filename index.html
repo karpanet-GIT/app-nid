@@ -11,6 +11,7 @@
 :root{
   --bg:#FFFFFF; --surface:#FFFFFF; --surface2:#F6F8FB; --ink:#18213A; --muted:#5A6378; --line:#E3E7EE;
   --accent:#2F5BD3; --accent-ink:#FFFFFF; --gain:#17804F; --loss:#C0362C; --neutral:#E2E6EE; --warn:#9A5B00; --warn-bg:#FFF4DF;
+  --logo-bg:transparent; --logo-pad:0;
   color-scheme:light;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -20,12 +21,14 @@
   :root:not([data-theme="light"]){
     --bg:#0D1321; --surface:#151E31; --surface2:#1A253C; --ink:#E6EAF2; --muted:#97A1B5; --line:#27324A;
     --accent:#7396FF; --accent-ink:#0D1321; --gain:#3EC07F; --loss:#FF6E61; --neutral:#212C44; --warn:#FFC266; --warn-bg:#2E2614;
+    --logo-bg:#FFFFFF; --logo-pad:3px 6px;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0D1321; --surface:#151E31; --surface2:#1A253C; --ink:#E6EAF2; --muted:#97A1B5; --line:#27324A;
   --accent:#7396FF; --accent-ink:#0D1321; --gain:#3EC07F; --loss:#FF6E61; --neutral:#212C44; --warn:#FFC266; --warn-bg:#2E2614;
+  --logo-bg:#FFFFFF; --logo-pad:3px 6px;
   color-scheme:dark;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -41,6 +44,8 @@ small{font-size:12.5px;color:var(--muted)}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .top-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .top h1{font-size:17px;font-weight:700;margin:0;margin-right:auto;letter-spacing:-.01em}
+.top h1.logo{line-height:0}
+.top h1.logo img{height:52px;width:auto;display:block;background:var(--logo-bg);border-radius:8px;padding:var(--logo-pad)}
 .ranges{display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;overflow-x:auto;max-width:100%}
 .ranges button{border:0;background:none;padding:5px 10px;border-radius:7px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
 .ranges button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
@@ -163,6 +168,7 @@ textarea{min-height:130px;font-family:ui-monospace,Menlo,Consolas,monospace;font
 }
 @media (max-width:760px){
   .top-in{padding:9px 14px}
+  .top h1.logo img{height:44px}
   main{padding:16px 12px 50px}
   .row,body.range-carico .row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n v" "p t";gap:4px 10px;padding:11px 14px}
   .row .c-name{grid-area:n} .row .c-val{grid-area:v;font-weight:700}
@@ -254,7 +260,7 @@ label.chk{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--i
 <body class="range-carico">
 <header class="top">
   <div class="top-in">
-    <h1>Il mio portafoglio</h1>
+    <h1 class="logo"><img src="logo.png" alt="My Securities – Il mio portafoglio" width="521" height="424"></h1>
     <div class="ranges" id="ranges" role="group" aria-label="Periodo"></div>
     <div class="actions">
       <button class="btn" id="btnBulk">Aggiorna prezzi</button>
